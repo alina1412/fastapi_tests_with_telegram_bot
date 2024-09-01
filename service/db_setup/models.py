@@ -5,12 +5,12 @@ from sqlalchemy.orm import declarative_base
 Base = declarative_base()
 
 
-class User(Base):
-    __tablename__ = "users"
+
+class Question(Base):
+    __tablename__ = "questions"
 
     id = Column(Integer, primary_key=True)
-    username = Column(String(255), unique=True, nullable=False)
-    password = Column(String(255), nullable=False)
+    text = Column(String(255), nullable=True)
     active = Column(Integer, nullable=False, default=1)
 
 
@@ -23,8 +23,11 @@ class Answer(Base):
     question = Column(Integer, ForeignKey("questions.id", ondelete="CASCADE"))
 
 
-class Question(Base):
-    __tablename__ = "questions"
+class User(Base):
+    __tablename__ = "users"
 
     id = Column(Integer, primary_key=True)
-    text = Column(String(255), nullable=True)
+    username = Column(String(255), unique=True, nullable=False)
+    password = Column(String(255), nullable=False)
+    active = Column(Integer, nullable=False, default=1)
+

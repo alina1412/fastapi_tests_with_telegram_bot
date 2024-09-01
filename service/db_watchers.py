@@ -51,9 +51,7 @@ class UserDb:
         self.model = model
 
     async def select_all(self, session):
-        if not conds:
-            conds = (1 == 1,)
-
+        conds = (1 == 1,)
         q = sa.select(self.model).where(*conds)
         result = await session.execute(q)
         res = result.scalars().all()
@@ -69,10 +67,10 @@ class UserDb:
             return result.returned_defaults[0]  # id
         return None
 
-    async def update(self, session, vals):
-        kw = {"id": 100, User.active.key: User.active or 0}
+    async def update(self, session):
+        vals = {"id": 100, User.active.key: User.active or 0}
         conds = (
-            User.id == kw["id"],
+            User.id == vals["id"],
             sa.or_(
                 User.active == 1,
                 User.password.is_(None),
@@ -80,7 +78,7 @@ class UserDb:
         )
         # {self.model.active.key: self.model.active or data["active"]}
         if not conds:
-            conds = (1 == 1,)
+            conds = (1 == 1,) # conds = (User.id == 103,)
         stmt = (
             sa.update(self.model).where(*conds).values(**vals).returning(self.model.id)
         )

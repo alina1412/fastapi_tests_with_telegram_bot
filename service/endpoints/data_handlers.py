@@ -29,8 +29,8 @@ async def show_quiz(user_id=1, session: AsyncSession = Depends(get_session)):
     """show quiz-test page"""
     q_manager = QuestionsManager(session)
     id_ = 1
-    q = q_manager.get_question(id_)
-    questions = q_manager.get_all_questions()
+    q = await q_manager.get_question(id_)
+    questions = await q_manager.get_all_questions()
     return {"data": questions}
 
 
@@ -72,16 +72,16 @@ async def edit_question(
     },
 )
 async def user_handler(
-    q_id=None, new_text=None, session: AsyncSession = Depends(get_session)
+    q_id=None, new_data=None, session: AsyncSession = Depends(get_session)
 ):
     """example with postgres sqlalchemy"""
-    add_data = add_data if add_data else str(random.random())
+    add_data = new_data if new_data else str(random.random())
     print(add_data)
     db = UserDb(User)
     id_ = await db.put(session, add_data, "bbb")
 
     id_ = 0
-    # conds = (User.id == 103,)
+    
     users = await db.select_all(session)
     print(users)
 
