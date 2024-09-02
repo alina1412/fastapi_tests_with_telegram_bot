@@ -28,27 +28,42 @@ class QuestionDb:
         return
 
     async def deactivate_question(self, id_):
-        pass
+        vals = {Question.active.key: 0}
+        conds = (Question.id == id_,)
+        stmt = sa.update(Question).where(*conds).values(**vals).returning(Question.id)
+        result = list(await self.session.execute(stmt))
+        return result
 
     async def find_all_answers(self, q_id):
         pass
 
     async def find_correct_answer(self, q_id):
-        pass
+        q = sa.select(Answer).where(
+            (Answer.question == q_id) & (Answer.correct == True)
+        )
+        result = await self.session.execute(q)
+        res = result.scalars().all()
+        return res
 
     async def get_question_by_id(self, id_):
-        q = sa.select(Answer).where(Question.id == id_)
+        q = sa.select(Question).where(Question.id == id_)
         result = await self.session.execute(q)
         res = result.scalars().all()
         return res
 
     async def get_questions(self, data: QuestionListRequest):
-        offset = data.offset or 0
-        limit = data.limit or 50
-        order = Question.id.desc() if data.order == "id" else None
+        data = data.dict()
+        order = Question.id.desc() if data["order"] == "id" else None
 
-        q = sa.select(Question).order_by(order).offset(offset).limit(limit)
-        # if data.
+        q = (
+            sa.select(Question)
+            .where(Question.active == data["active"])
+            .order_by(order)
+            .limit(data["limit"])
+            .offset(data["offset"])
+        )
+        if data["text"]:
+            q = q.where(Question.text.ilike(f"%{data['text']}%"))
         result = await self.session.execute(q)
         res = result.scalars().all()
         return res
@@ -68,9 +83,10 @@ class AnswerDb:
         return None
 
     async def remove_answer(self, id_):
-        pass
+        stmt = sa.delete(Answer).where(Answer.id == id_)
+        result = await self.session.execute(stmt)
 
-    async def get_answer(self, ans_id):
+    async def get_answer_by_id(self, ans_id):
         q = sa.select(Answer).where(Answer.id == ans_id)
         result = await self.session.execute(q)
         res = result.scalars().all()

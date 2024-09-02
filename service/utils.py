@@ -19,20 +19,23 @@ class QuestionsManager:
         vals = {"text": data.text}
         return await QuestionDb(self.session).add_question(vals)
 
-    async def remove_question(self, id_):
+    async def remove_question(self, id_: int):
+        await QuestionDb(self.session).remove_question(id_)
+
+    async def deactivate_question(self, id_: int):
+        res = await QuestionDb(self.session).deactivate_question(id_)
+        return res[0].id if res else None
+
+    async def find_all_answers(self, q_id: int):
         pass
 
-    async def deactivate_question(self, id_):
-        pass
+    async def find_correct_answer(self, q_id: int):
+        res = await QuestionDb(self.session).find_correct_answer(q_id)
+        return res[0].id if res else None
 
-    async def find_all_answers(self, q_id):
-        pass
-
-    async def find_correct_answer(self, q_id):
-        pass
-
-    async def get_question_by_id(self, id_):
+    async def get_question_by_id(self, id_: int):
         res = await QuestionDb(self.session).get_question_by_id(id_)
+        return res[0].id if res else None
 
     async def get_questions(self, data: QuestionListRequest):
         res = await QuestionDb(self.session).get_questions(data)
@@ -48,17 +51,19 @@ class AnswersManager:
         self.session = session
 
     async def add_answer(self, data: AnswerRequest):
-        vals = {"text": data.text}
-        return await AnswerDb(self.session).add_answer(vals)
+        vals = {"text": data.text, "question": data.question, "correct": data.correct}
+        res = await AnswerDb(self.session).add_answer(vals)
+        return res  # res[0].id if res else None
 
-    async def remove_answer(self, id_):
-        pass
+    async def remove_answer(self, id_: int):
+        await AnswerDb(self.session).remove_answer(id_)
 
-    async def get_answer(self, ans_id):
-        res = await AnswerDb(self.session).get_answer(ans_id)
+    async def get_answer_by_id(self, ans_id: int):
+        res = await AnswerDb(self.session).get_answer_by_id(ans_id)
+        return res[0].id if res else None
 
-    async def get_answers_for_question(self, q_id):
-        res = await AnswerDb(self.session).get_answer(q_id)
+    async def get_answers_for_question(self, q_id: int):
+        res = await AnswerDb(self.session).get_answer_by_id(q_id)
         # data = [{"username": u.username, "id": u.id} for u in res]
         resp = [u.__dict__ for u in res]
         return resp

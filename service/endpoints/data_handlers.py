@@ -1,4 +1,5 @@
 import random
+from typing import Optional
 from pydantic import parse_obj_as
 from fastapi import APIRouter, Depends, HTTPException, status
 
@@ -15,7 +16,7 @@ from service.db_setup.models import Question, User
 
 api_router = APIRouter(
     prefix="/v1",
-    tags=["private"],
+    tags=["quiz"],
 )
 
 
@@ -35,8 +36,9 @@ async def show_quiz(
     id_ = 1
     # q = await q_manager.get_question_by_id(id_)
     questions = await q_manager.get_questions(data)
+    # questions = await q_manager.find_correct_answer(id_)
     # return parse_obj_as(list[QuestionResponse], questions)
-    return questions
+    return questions if questions else []
 
 
 @api_router.post(
@@ -66,12 +68,16 @@ async def add_question(
     },
 )
 async def edit_question(
-    q_id=None, new_text=None, session: AsyncSession = Depends(get_session)
+    q_id: Optional[int] = None,
+    new_text=None,
+    session: AsyncSession = Depends(get_session),
 ):
     """request for edit_question"""
     q_manager = QuestionsManager(session)
+    if q_id:
+        res = await q_manager.deactivate_question(q_id)
 
-    return {"TODO": "TODO"}
+    return {"deactivated": res}
 
 
 @api_router.put(
