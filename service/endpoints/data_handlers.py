@@ -1,5 +1,5 @@
 import random
-import sqlalchemy as sa
+from pydantic import parse_obj_as
 from fastapi import APIRouter, Depends, HTTPException, status
 
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -8,8 +8,9 @@ from service.config import key
 
 from service.db_setup.db_settings import get_session
 from service.db_watchers import UserDb
-from service.utils import QuestionsManager, AnswersManager
-from service.db_setup.models import User
+from service.schemas import QuestionListRequest, QuestionRequest, QuestionResponse
+from service.utils import AnswersManager, QuestionsManager
+from service.db_setup.models import Question, User
 
 
 api_router = APIRouter(
@@ -18,35 +19,43 @@ api_router = APIRouter(
 )
 
 
-@api_router.get(
+@api_router.post(
     "/show-quiz",
+    response_model=list[QuestionResponse],
     responses={
         status.HTTP_400_BAD_REQUEST: {"description": "Bad request"},
         status.HTTP_422_UNPROCESSABLE_ENTITY: {"description": "Bad request"},
     },
 )
-async def show_quiz(user_id=1, session: AsyncSession = Depends(get_session)):
+async def show_quiz(
+    data: QuestionListRequest, session: AsyncSession = Depends(get_session)
+) -> list[QuestionResponse]:
     """show quiz-test page"""
     q_manager = QuestionsManager(session)
     id_ = 1
-    q = await q_manager.get_question(id_)
-    questions = await q_manager.get_all_questions()
-    return {"data": questions}
+    # q = await q_manager.get_question_by_id(id_)
+    questions = await q_manager.get_questions(data)
+    # return parse_obj_as(list[QuestionResponse], questions)
+    return questions
 
 
 @api_router.post(
     "/add-question",
+    status_code=status.HTTP_201_CREATED,
     responses={
         status.HTTP_400_BAD_REQUEST: {"description": "Bad request"},
         status.HTTP_422_UNPROCESSABLE_ENTITY: {"description": "Bad request"},
     },
 )
-async def add_question(session: AsyncSession = Depends(get_session)):
+async def add_question(
+    data: QuestionRequest, session: AsyncSession = Depends(get_session)
+):
     """request for add-question"""
     q_manager = QuestionsManager(session)
-    id_ = 1
-    # return {"id": id_}
-    return {"TODO": "TODO"}
+    id_ = await q_manager.add_question(data)
+    if id_:
+        return {"created": id_}
+    return {"not": id_}
 
 
 @api_router.put(
@@ -60,6 +69,7 @@ async def edit_question(
     q_id=None, new_text=None, session: AsyncSession = Depends(get_session)
 ):
     """request for edit_question"""
+    q_manager = QuestionsManager(session)
 
     return {"TODO": "TODO"}
 
@@ -81,7 +91,7 @@ async def user_handler(
     id_ = await db.put(session, add_data, "bbb")
 
     id_ = 0
-    
+
     users = await db.select_all(session)
     print(users)
 
