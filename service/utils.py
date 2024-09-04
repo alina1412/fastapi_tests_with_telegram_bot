@@ -33,6 +33,12 @@ class QuestionsManager:
         res = await QuestionDb(self.session).find_correct_answer(q_id)
         return res[0].id if res else None
 
+    async def compare_correct_answer(self, q_id: int, a_id: int):
+        res = await QuestionDb(self.session).find_correct_answer(q_id)
+        if not res:
+            return None
+        return res[0].id == a_id
+
     async def get_question_by_id(self, id_: int):
         res = await QuestionDb(self.session).get_question_by_id(id_)
         return res[0].id if res else None
@@ -51,7 +57,7 @@ class AnswersManager:
         self.session = session
 
     async def add_answer(self, data: AnswerRequest):
-        vals = {"text": data.text, "question": data.question, "correct": data.correct}
+        vals = data.dict()
         res = await AnswerDb(self.session).add_answer(vals)
         return res  # res[0].id if res else None
 

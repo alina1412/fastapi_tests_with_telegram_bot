@@ -9,7 +9,13 @@ from service.config import key
 
 from service.db_setup.db_settings import get_session
 from service.db_watchers import UserDb
-from service.schemas import QuestionListRequest, QuestionRequest, QuestionResponse
+from service.schemas import (
+    AnswerRequest,
+    QuestionEditRequest,
+    QuestionListRequest,
+    QuestionRequest,
+    QuestionResponse,
+)
 from service.utils import AnswersManager, QuestionsManager
 from service.db_setup.models import Question, User
 
@@ -68,16 +74,53 @@ async def add_question(
     },
 )
 async def edit_question(
-    q_id: Optional[int] = None,
-    new_text=None,
+    params: QuestionEditRequest = Depends(),
     session: AsyncSession = Depends(get_session),
 ):
     """request for edit_question"""
     q_manager = QuestionsManager(session)
-    if q_id:
-        res = await q_manager.deactivate_question(q_id)
-
+    print(params, dict(params))
+    # if q_id:
+    #     res = await q_manager.deactivate_question(q_id)
+    res = 0
     return {"deactivated": res}
+
+
+@api_router.post(
+    "/add-answer",
+    status_code=status.HTTP_201_CREATED,
+    responses={
+        status.HTTP_400_BAD_REQUEST: {"description": "Bad request"},
+        status.HTTP_422_UNPROCESSABLE_ENTITY: {"description": "Bad request"},
+    },
+)
+async def add_answer(data: AnswerRequest, session: AsyncSession = Depends(get_session)):
+    """request for add-answer"""
+    a_manager = AnswersManager(session)
+    id_ = await a_manager.add_answer(data)
+    if id_:
+        return {"created": id_}
+    return {"not": id_}
+
+
+@api_router.put(
+    "/submit-answer",
+    responses={
+        status.HTTP_400_BAD_REQUEST: {"description": "Bad request"},
+        status.HTTP_422_UNPROCESSABLE_ENTITY: {"description": "Bad request"},
+    },
+)
+async def submit_answer(
+    q_id: int = 1,  # TEST
+    a_id: int = 1,
+    session: AsyncSession = Depends(get_session),
+):
+    """request for compare_correct_answer"""
+    q_manager = QuestionsManager(session)
+    res = await q_manager.compare_correct_answer(q_id, a_id)
+    if res is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, f"No")
+    return {"correct": res}
 
 
 @api_router.put(

@@ -31,6 +31,12 @@ class QuestionListRequest(BaseModel):
     )
 
 
+class QuestionEditRequest(BaseModel):
+    id: int
+    text: Optional[str] = None
+    active: Optional[int] = 0
+
+
 class QuestionRequest(BaseModel):
     """
     Schema for input.
@@ -72,7 +78,7 @@ class AnswerRequest(BaseModel):
 
     id: Optional[int] = Field(example=1, description="id of answer", default=None)
     text: str = Field(
-        example="question 1", description="text", min_length=1, max_length=50
+        example="answer 1", description="text", min_length=1, max_length=50
     )
     correct: bool = Field(example=1, description="if answer is correct")
     question: int = Field(example=1, description="id of question")
