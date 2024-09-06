@@ -2,7 +2,7 @@ import sqlalchemy as sa
 
 # from sqlalchemy import select, update, or_, delete
 from sqlalchemy.dialects.postgresql import insert
-
+from sqlalchemy.orm import lazyload, joinedload, load_only
 
 from service.db_setup.models import Answer, User, Question
 from service.schemas import QuestionListRequest
@@ -39,7 +39,7 @@ class QuestionDb:
 
     async def find_correct_answer(self, q_id):
         q = sa.select(Answer).where(
-            (Answer.question == q_id) & (Answer.correct == True)
+            (Answer.question_id == q_id) & (Answer.correct == True)
         )
         result = await self.session.execute(q)
         res = result.scalars().all()
@@ -68,6 +68,39 @@ class QuestionDb:
         res = result.scalars().all()
         return res
 
+    async def get_questions_with_answers(self, data: QuestionListRequest):
+        data = data.dict()
+        order = Question.id.desc() if data["order"] == "id" else None
+
+        q = (
+            sa.select(Question, Answer)
+            .where(Question.active == data["active"])
+            .order_by(order)
+            .limit(data["limit"])
+            .offset(data["offset"])
+        )
+        if data["text"]:
+            q = q.where(Question.text.ilike(f"%{data['text']}%"))
+
+        q = q.join(Answer, Question.id == Answer.question_id)
+        # q = q.options(
+        #         joinedload(Question.answers).options(
+        #             load_only(
+        #                 Answer.id,
+        #                 Answer.text,
+        #                 Answer.correct,
+        #             )
+        #         ),
+        #         load_only(
+        #             Question.id,
+        #             Question.text,
+        #             Question.active,
+        #         ),)
+        result = await self.session.execute(q)
+        # result = result.scalars()
+        # result = result.scalars().all()
+        return result
+
 
 class AnswerDb:
     session = None
@@ -78,7 +111,7 @@ class AnswerDb:
     async def add_answer(self, vals):
         q = insert(Answer).values(**vals).on_conflict_do_nothing()
         result = await self.session.execute(q)
-        if result.rowcount:
+        if result.rowcount and result.returned_defaults:
             return result.returned_defaults[0]  # id
         return None
 
@@ -93,7 +126,7 @@ class AnswerDb:
         return res
 
     async def get_answers_for_question(self, q_id):
-        q = sa.select(Answer).where(Answer.question == q_id)
+        q = sa.select(Answer).where(Answer.question_id == q_id)
         result = await self.session.execute(q)
         res = result.scalars().all()
         return res

@@ -1,3 +1,4 @@
+from collections import defaultdict
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from service.db_watchers import AnswerDb, QuestionDb
@@ -48,6 +49,22 @@ class QuestionsManager:
         # resp = [{"text": u.text, "id": u.id, "active": u.active} for u in res]
         resp = [u.__dict__ for u in res]
         return resp
+
+    async def get_questions_with_answers(self, data: QuestionListRequest):
+        res = await QuestionDb(self.session).get_questions_with_answers(data)
+        # resp = [{"text": u.text, "id": u.id, "active": u.active} for u in res]
+
+        responses = {}
+        for question, *answers in res:
+            if question.id not in responses:
+                responses[question.id] = (question.text, question.active, [])
+
+            for answer in answers:
+                if answer:
+                    responses[question.id][2].append((answer.text, answer.correct))
+
+        # responses = [u.__dict__ for u in res]
+        return responses
 
 
 class AnswersManager:

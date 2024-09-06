@@ -10,6 +10,7 @@ from service.config import key
 from service.db_setup.db_settings import get_session
 from service.db_watchers import UserDb
 from service.schemas import (
+    AnswerAddRequest,
     AnswerRequest,
     QuestionEditRequest,
     QuestionListRequest,
@@ -28,7 +29,7 @@ api_router = APIRouter(
 
 @api_router.post(
     "/show-quiz",
-    response_model=list[QuestionResponse],
+    # response_model=list[QuestionResponse],
     responses={
         status.HTTP_400_BAD_REQUEST: {"description": "Bad request"},
         status.HTTP_422_UNPROCESSABLE_ENTITY: {"description": "Bad request"},
@@ -36,14 +37,31 @@ api_router = APIRouter(
 )
 async def show_quiz(
     data: QuestionListRequest, session: AsyncSession = Depends(get_session)
-) -> list[QuestionResponse]:
+):  # -> list[QuestionResponse]
     """show quiz-test page"""
     q_manager = QuestionsManager(session)
     id_ = 1
     # q = await q_manager.get_question_by_id(id_)
-    questions = await q_manager.get_questions(data)
+    questions = await q_manager.get_questions_with_answers(data)
     # questions = await q_manager.find_correct_answer(id_)
     # return parse_obj_as(list[QuestionResponse], questions)
+    return questions if questions else []
+
+
+@api_router.post(
+    "/questions",
+    response_model=list[QuestionResponse],
+    responses={
+        status.HTTP_400_BAD_REQUEST: {"description": "Bad request"},
+        status.HTTP_422_UNPROCESSABLE_ENTITY: {"description": "Bad request"},
+    },
+)
+async def get_questions(
+    data: QuestionListRequest, session: AsyncSession = Depends(get_session)
+) -> list[QuestionResponse]:
+    """get_questions"""
+    q_manager = QuestionsManager(session)
+    questions = await q_manager.get_questions(data)
     return questions if questions else []
 
 
@@ -94,13 +112,15 @@ async def edit_question(
         status.HTTP_422_UNPROCESSABLE_ENTITY: {"description": "Bad request"},
     },
 )
-async def add_answer(data: AnswerRequest, session: AsyncSession = Depends(get_session)):
+async def add_answer(
+    data: AnswerAddRequest, session: AsyncSession = Depends(get_session)
+):
     """request for add-answer"""
     a_manager = AnswersManager(session)
     id_ = await a_manager.add_answer(data)
     if id_:
         return {"created": id_}
-    return {"not": id_}
+    raise HTTPException(status.HTTP_400_BAD_REQUEST, f"answer not added")
 
 
 @api_router.put(
@@ -119,7 +139,7 @@ async def submit_answer(
     q_manager = QuestionsManager(session)
     res = await q_manager.compare_correct_answer(q_id, a_id)
     if res is None:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, f"No")
+        raise HTTPException(status.HTTP_404_NOT_FOUND, f"Not found")
     return {"correct": res}
 
 

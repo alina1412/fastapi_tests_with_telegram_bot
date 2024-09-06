@@ -80,8 +80,20 @@ class AnswerRequest(BaseModel):
     text: str = Field(
         example="answer 1", description="text", min_length=1, max_length=50
     )
-    correct: bool = Field(example=1, description="if answer is correct")
-    question: int = Field(example=1, description="id of question")
+    correct: bool = Field(example=True, description="if answer is correct")
+    question_id: int = Field(example=1, description="id of question")
+
+
+class AnswerAddRequest(BaseModel):
+    """
+    Schema for input.
+    """
+
+    text: str = Field(
+        example="answer 1", description="text", min_length=1, max_length=50
+    )
+    correct: bool = Field(example=True, description="if answer is correct")
+    question_id: int = Field(example=1, description="id of question")
 
 
 class AnswerResponse(BaseModel):
@@ -91,5 +103,5 @@ class AnswerResponse(BaseModel):
 
     id: int = Field(example=1, description="id of answer")
     text: str = Field(example="question 1", description="text")
-    correct: bool = Field(example=1, description="if answer is correct")
-    question: int = Field(example=1, description="id of question")
+    correct: bool = Field(example=True, description="if answer is correct")
+    question_id: int = Field(example=1, description="id of question")
