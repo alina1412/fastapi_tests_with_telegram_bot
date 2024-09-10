@@ -4,7 +4,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from service.db_watchers import AnswerDb, QuestionDb
 from service.schemas import (
     QuestionListRequest,
-    QuestionRequest,
+    QuestionEditRequest,
     AnswerRequest,
     QuestionResponse,
 )
@@ -16,29 +16,37 @@ class QuestionsManager:
     def __init__(self, session: AsyncSession) -> None:
         self.session = session
 
-    async def add_question(self, data: QuestionRequest):
-        vals = {"text": data.text}
+    async def add_question(self, data: QuestionEditRequest):
+        vals = dict(data)
         return await QuestionDb(self.session).add_question(vals)
 
     async def remove_question(self, id_: int):
         await QuestionDb(self.session).remove_question(id_)
 
-    async def deactivate_question(self, id_: int):
-        res = await QuestionDb(self.session).deactivate_question(id_)
+    async def edit_question_by_id(self, vals: dict):
+        id_ = vals.pop("id")
+        res = await QuestionDb(self.session).edit_question_by_id(id_, vals)
         return res[0].id if res else None
 
     async def find_all_answers(self, q_id: int):
         pass
 
-    async def find_correct_answer(self, q_id: int):
-        res = await QuestionDb(self.session).find_correct_answer(q_id)
-        return res[0].id if res else None
+    async def find_correct_answers(self, q_id: int):
+        res = await QuestionDb(self.session).find_correct_answers(q_id)
+        resp = [u.__dict__ for u in res] if res else None
+        return resp
 
-    async def compare_correct_answer(self, q_id: int, a_id: int):
-        res = await QuestionDb(self.session).find_correct_answer(q_id)
+    async def compare_correct_answer(self, params: dict):
+        q_id, a_ids = params["question_id"], params["answer_ids"]
+        a_ids = a_ids.dict()['answers']
+        if not a_ids:
+            return False
+        res = await QuestionDb(self.session).find_correct_answers(q_id)
         if not res:
             return None
-        return res[0].id == a_id
+        res = [r.id for r in res]
+        print(res, a_ids)
+        return sorted(res) == sorted(a_ids)
 
     async def get_question_by_id(self, id_: int):
         res = await QuestionDb(self.session).get_question_by_id(id_)
@@ -61,7 +69,9 @@ class QuestionsManager:
 
             for answer in answers:
                 if answer:
-                    responses[question.id][2].append((answer.text, answer.correct))
+                    responses[question.id][2].append(
+                        (answer.id, answer.text, answer.correct)
+                    )
 
         # responses = [u.__dict__ for u in res]
         return responses

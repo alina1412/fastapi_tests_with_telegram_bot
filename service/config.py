@@ -18,6 +18,6 @@ db_settings = {
 
 
 def utcnow() -> datetime:
-    now: datetime = datetime.utcnow()
+    now: datetime = datetime.datetime.utcnow()
     now = pytz.utc.localize(now)
     return now

@@ -1,4 +1,4 @@
-from typing import Optional, Union
+from typing import List, Optional, Union
 
 from enum import Enum
 from pydantic import BaseModel, Field
@@ -6,6 +6,10 @@ from pydantic import BaseModel, Field
 
 class UserInput(BaseModel):
     username: str
+
+
+class AnswersList(BaseModel):
+    answers: List[int] = Field(default_factory=list, min_items=1)
 
 
 class QuestionOrderSchema(str, Enum):
@@ -31,20 +35,29 @@ class QuestionListRequest(BaseModel):
     )
 
 
-class QuestionEditRequest(BaseModel):
-    id: int
-    text: Optional[str] = None
-    active: Optional[int] = 0
-
-
-class QuestionRequest(BaseModel):
-    """
-    Schema for input.
-    """
-
-    id: Union[None | int] = Field(description="id of question", default=None)
+class QuestionAddRequest(BaseModel):
     text: str = Field(description="text", min_length=1, max_length=255)
     active: Optional[int] = Field(description="if question is active", default=1)
+
+    # edit_date: datetime.datetime = Field(
+    #     example="2022-01-05T16:41:24+03:30", description="date"
+    # )
+
+    class Config:
+        schema_extra = {
+            "example": {
+                # "edit_date": "2022-01-05T16:41:24+03:30",
+                "text": "question1",
+                "active": 1,
+                "id": None,
+            }
+        }
+
+
+class QuestionEditRequest(BaseModel):
+    id: int = Field(description="id of question")
+    text: Optional[str] = Field(description="text", min_length=1, max_length=255)
+    active: Optional[int] = Field(description="if question is active")
 
     # edit_date: datetime.datetime = Field(
     #     example="2022-01-05T16:41:24+03:30", description="date"
@@ -94,6 +107,11 @@ class AnswerAddRequest(BaseModel):
     )
     correct: bool = Field(example=True, description="if answer is correct")
     question_id: int = Field(example=1, description="id of question")
+
+
+class AnswerSubmitRequest(BaseModel):
+    question_id: int = Field(example=1, description="id of question")
+    answer_ids: AnswersList
 
 
 class AnswerResponse(BaseModel):

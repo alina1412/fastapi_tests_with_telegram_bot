@@ -12,9 +12,11 @@ from service.db_watchers import UserDb
 from service.schemas import (
     AnswerAddRequest,
     AnswerRequest,
+    AnswerSubmitRequest,
+    QuestionAddRequest,
     QuestionEditRequest,
     QuestionListRequest,
-    QuestionRequest,
+    QuestionEditRequest,
     QuestionResponse,
 )
 from service.utils import AnswersManager, QuestionsManager
@@ -74,7 +76,7 @@ async def get_questions(
     },
 )
 async def add_question(
-    data: QuestionRequest, session: AsyncSession = Depends(get_session)
+    data: QuestionAddRequest, session: AsyncSession = Depends(get_session)
 ):
     """request for add-question"""
     q_manager = QuestionsManager(session)
@@ -97,11 +99,8 @@ async def edit_question(
 ):
     """request for edit_question"""
     q_manager = QuestionsManager(session)
-    print(params, dict(params))
-    # if q_id:
-    #     res = await q_manager.deactivate_question(q_id)
-    res = 0
-    return {"deactivated": res}
+    res = await q_manager.edit_question_by_id(dict(params))
+    return {"edited": res}
 
 
 @api_router.post(
@@ -131,13 +130,13 @@ async def add_answer(
     },
 )
 async def submit_answer(
-    q_id: int = 1,  # TEST
-    a_id: int = 1,
+    params: AnswerSubmitRequest = Depends(),
     session: AsyncSession = Depends(get_session),
 ):
     """request for compare_correct_answer"""
+    params = dict(params)
     q_manager = QuestionsManager(session)
-    res = await q_manager.compare_correct_answer(q_id, a_id)
+    res = await q_manager.compare_correct_answer(params)
     if res is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, f"Not found")
     return {"correct": res}

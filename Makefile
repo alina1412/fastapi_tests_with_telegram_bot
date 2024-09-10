@@ -12,7 +12,8 @@ else
 endif
 
 up:
-	$(docker_up) 
+	$(docker_up)
+	$(alembic_up)
 
 alembic:
 	$(alembic_up)

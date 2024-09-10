@@ -17,7 +17,8 @@ running using poetry and make:
 creating postgres from docker-compose:
 
 -make up
-
+-poetry run alembic -c alembic.ini revision --autogenerate
+-poetry run alembic -c alembic.ini upgrade head
 
 enter docker container (why?):
 -docker exec -it 47dece677d93  bash

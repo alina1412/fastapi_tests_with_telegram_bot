@@ -27,17 +27,23 @@ class QuestionDb:
         # result.rowcount
         return
 
-    async def deactivate_question(self, id_):
-        vals = {Question.active.key: 0}
-        conds = (Question.id == id_,)
-        stmt = sa.update(Question).where(*conds).values(**vals).returning(Question.id)
+    async def edit_question_by_id(self, id_: int, vals: dict):
+        vals = {k: v for k, v in vals.items() if v is not None}
+        if not vals:
+            return None
+        stmt = (
+            sa.update(Question)
+            .where(Question.id == id_)
+            .values(**vals)
+            .returning(Question.id)
+        )
         result = list(await self.session.execute(stmt))
         return result
 
     async def find_all_answers(self, q_id):
         pass
 
-    async def find_correct_answer(self, q_id):
+    async def find_correct_answers(self, q_id):
         q = sa.select(Answer).where(
             (Answer.question_id == q_id) & (Answer.correct == True)
         )
