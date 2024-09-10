@@ -45,7 +45,7 @@ class QuestionsManager:
         if not res:
             return None
         res = [r.id for r in res]
-        print(res, a_ids)
+        # print(res, a_ids)
         return sorted(res) == sorted(a_ids)
 
     async def get_question_by_id(self, id_: int):

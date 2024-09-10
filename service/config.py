@@ -18,6 +18,6 @@ db_settings = {
 
 
 def utcnow() -> datetime:
-    now: datetime = datetime.datetime.utcnow()
-    now = pytz.utc.localize(now)
+    '''datetime object with timezone awareness'''
+    now: datetime = datetime.datetime.now(tz=pytz.utc)
     return now

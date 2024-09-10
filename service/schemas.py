@@ -1,3 +1,4 @@
+from datetime import datetime
 from typing import List, Optional, Union
 
 from enum import Enum
@@ -82,6 +83,7 @@ class QuestionResponse(BaseModel):
     id: int = Field(example=1, description="id of question")
     text: str = Field(example="question 1", description="text")
     active: int = Field(example=1, description="if question is active")
+    updated_dt: datetime
 
 
 class AnswerRequest(BaseModel):

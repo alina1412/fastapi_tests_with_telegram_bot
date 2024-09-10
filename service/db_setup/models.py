@@ -1,25 +1,37 @@
+import sqlalchemy as sa
+
+from datetime import datetime
 from typing import List
-from sqlalchemy import create_engine, Column, Integer, String, Text, ForeignKey, Boolean
-from sqlalchemy.orm import declarative_base, relationship, Mapped, mapped_column
+from sqlalchemy import Column, Integer, String, Text, ForeignKey, Boolean, DateTime, TIMESTAMP, text as sa_text
+from sqlalchemy.orm import declarative_base, DeclarativeBase, relationship, Mapped, mapped_column, MappedAsDataclass
+
+from sqlalchemy.sql import func
+
+from service.config import utcnow
 
 
-Base = declarative_base()
+class Base(DeclarativeBase):
+    pass
+
+class Base(MappedAsDataclass, DeclarativeBase):
+    """subclasses will be converted to dataclasses"""
+    pass
 
 
 class Question(Base):
     __tablename__ = "questions"
 
-    id = Column(Integer, primary_key=True)
-    text = Column(String(255), nullable=True)
-    active = Column(Integer, nullable=False, default=1)
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    text: Mapped[str] = mapped_column(String(50), nullable=True)
+    active: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
     answers = relationship("Answer", backref="questions")
     # answers: Mapped[List["Answer"]] = relationship()
-    # updated_at: Mapped[datetime] = mapped_column(
-    #     sa.DateTime(timezone=True),
-    #     default_factory=utcnow,
-    #     server_default=models.DATETIME_DEFAULT,
-    #     onupdate=models.DATETIME_DEFAULT,
-    # )
+    updated_dt: Mapped[datetime] = mapped_column(
+        sa.DateTime(timezone=True),
+        default_factory=utcnow,
+        server_default=sa_text("TIMEZONE('utc', now())"),
+        onupdate=sa_text("TIMEZONE('utc', now())"),
+    )
 
 
 class Answer(Base):
@@ -43,4 +55,5 @@ class User(Base):
     active = Column(Integer, nullable=False, default=1)
 
 
-# Base.metadata.create_all
+# create_engine
+# Base.metadata.create_all()
