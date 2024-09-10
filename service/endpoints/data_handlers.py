@@ -1,5 +1,5 @@
 import random
-from typing import Optional
+from typing import Any, Dict, List, Optional, Union
 from pydantic import parse_obj_as
 from fastapi import APIRouter, Depends, HTTPException, status
 
@@ -18,6 +18,7 @@ from service.schemas import (
     QuestionListRequest,
     QuestionEditRequest,
     QuestionResponse,
+    QuizResponse,
 )
 from service.utils import AnswersManager, QuestionsManager
 from service.db_setup.models import Question, User
@@ -31,7 +32,7 @@ api_router = APIRouter(
 
 @api_router.post(
     "/show-quiz",
-    # response_model=list[QuestionResponse],
+    response_model=QuizResponse,
     responses={
         status.HTTP_400_BAD_REQUEST: {"description": "Bad request"},
         status.HTTP_422_UNPROCESSABLE_ENTITY: {"description": "Bad request"},
@@ -42,12 +43,9 @@ async def show_quiz(
 ):  # -> list[QuestionResponse]
     """show quiz-test page"""
     q_manager = QuestionsManager(session)
-    id_ = 1
-    # q = await q_manager.get_question_by_id(id_)
     questions = await q_manager.get_questions_with_answers(data)
-    # questions = await q_manager.find_correct_answer(id_)
-    # return parse_obj_as(list[QuestionResponse], questions)
-    return questions if questions else []
+    # return QuizResponse.parse_obj(questions)
+    return questions if questions else {}
 
 
 @api_router.post(

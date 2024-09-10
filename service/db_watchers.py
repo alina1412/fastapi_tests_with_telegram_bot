@@ -59,7 +59,12 @@ class QuestionDb:
 
     async def get_questions(self, data: QuestionListRequest):
         data = data.dict()
-        order = Question.id.desc() if data["order"] == "id" else None
+        orders = {
+            "id": Question.id.desc(),
+            "updated_dt": Question.updated_dt.desc(),
+            "active": Question.active.desc(),
+        }
+        order = orders[data["order"]] if data["order"] in orders else None
 
         q = (
             sa.select(Question)
@@ -115,7 +120,7 @@ class AnswerDb:
         self.session = session
 
     async def add_answer(self, vals):
-        q = insert(Answer).values(**vals).on_conflict_do_nothing()
+        q = insert(Answer).values(**vals)  # .on_conflict_do_nothing()
         result = await self.session.execute(q)
         if result.rowcount and result.returned_defaults:
             return result.returned_defaults[0]  # id

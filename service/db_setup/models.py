@@ -2,8 +2,25 @@ import sqlalchemy as sa
 
 from datetime import datetime
 from typing import List
-from sqlalchemy import Column, Integer, String, Text, ForeignKey, Boolean, DateTime, TIMESTAMP, text as sa_text
-from sqlalchemy.orm import declarative_base, DeclarativeBase, relationship, Mapped, mapped_column, MappedAsDataclass
+from sqlalchemy import (
+    Column,
+    Integer,
+    String,
+    Text,
+    ForeignKey,
+    Boolean,
+    DateTime,
+    TIMESTAMP,
+    text as sa_text,
+)
+from sqlalchemy.orm import (
+    declarative_base,
+    DeclarativeBase,
+    relationship,
+    Mapped,
+    mapped_column,
+    MappedAsDataclass,
+)
 
 from sqlalchemy.sql import func
 
@@ -13,8 +30,10 @@ from service.config import utcnow
 class Base(DeclarativeBase):
     pass
 
+
 class Base(MappedAsDataclass, DeclarativeBase):
     """subclasses will be converted to dataclasses"""
+
     pass
 
 

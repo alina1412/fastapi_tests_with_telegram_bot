@@ -1,12 +1,14 @@
-from collections import defaultdict
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.exc import IntegrityError
 
 from service.db_watchers import AnswerDb, QuestionDb
 from service.schemas import (
+    AnswerInResponse,
     QuestionListRequest,
     QuestionEditRequest,
     AnswerRequest,
     QuestionResponse,
+    QuestionResponseInQuiz,
 )
 
 
@@ -38,7 +40,7 @@ class QuestionsManager:
 
     async def compare_correct_answer(self, params: dict):
         q_id, a_ids = params["question_id"], params["answer_ids"]
-        a_ids = a_ids.dict()['answers']
+        a_ids = a_ids.dict()["answers"]
         if not a_ids:
             return False
         res = await QuestionDb(self.session).find_correct_answers(q_id)
@@ -58,21 +60,30 @@ class QuestionsManager:
         resp = [u.__dict__ for u in res]
         return resp
 
-    async def get_questions_with_answers(self, data: QuestionListRequest):
-        res = await QuestionDb(self.session).get_questions_with_answers(data)
-        # resp = [{"text": u.text, "id": u.id, "active": u.active} for u in res]
-
+    def convert_quiz_response(self, res):
         responses = {}
         for question, *answers in res:
             if question.id not in responses:
-                responses[question.id] = (question.text, question.active, [])
+                responses[question.id] = QuestionResponseInQuiz(
+                    text=question.text,
+                    id=question.id,
+                    active=question.active,
+                    answers=[],
+                )
 
             for answer in answers:
                 if answer:
-                    responses[question.id][2].append(
-                        (answer.id, answer.text, answer.correct)
+                    responses[question.id].answers.append(
+                        AnswerInResponse(
+                            id=answer.id, text=answer.text, correct=answer.correct
+                        )
                     )
+        return responses
 
+    async def get_questions_with_answers(self, data: QuestionListRequest):
+        res = await QuestionDb(self.session).get_questions_with_answers(data)
+        # resp = [{"text": u.text, "id": u.id, "active": u.active} for u in res]
+        responses = self.convert_quiz_response(res)
         # responses = [u.__dict__ for u in res]
         return responses
 
@@ -85,7 +96,11 @@ class AnswersManager:
 
     async def add_answer(self, data: AnswerRequest):
         vals = data.dict()
-        res = await AnswerDb(self.session).add_answer(vals)
+        try:
+            res = await AnswerDb(self.session).add_answer(vals)
+        except IntegrityError as err:
+            print(err)
+            return None
         return res  # res[0].id if res else None
 
     async def remove_answer(self, id_: int):
