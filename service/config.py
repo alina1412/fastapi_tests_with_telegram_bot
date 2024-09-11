@@ -1,5 +1,7 @@
+import datetime
 from os import environ
 
+import pytz
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -13,3 +15,9 @@ db_settings = {
     "db_port": environ.get("DB_PORT"),
     "db_password": environ.get("DB_PASSWORD"),
 }
+
+
+def utcnow() -> datetime:
+    """datetime object with timezone awareness"""
+    now: datetime = datetime.datetime.now(tz=pytz.utc)
+    return now

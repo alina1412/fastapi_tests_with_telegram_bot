@@ -1,48 +1,117 @@
-import sqlalchemy as sa
+from sqlalchemy.exc import IntegrityError
+from sqlalchemy.ext.asyncio import AsyncSession
 
-# from sqlalchemy import select, update, or_, delete
-from sqlalchemy.dialects.postgresql import insert
+from service.db_watchers import AnswerDb, QuestionDb
+from service.schemas import (
+    AnswerInResponse,
+    AnswerRequest,
+    QuestionEditRequest,
+    QuestionListRequest,
+    QuestionResponse,
+    QuestionResponseInQuiz,
+)
 
 
-from service.db_setup.models import User
+class QuestionsManager:
+    session = None
+
+    def __init__(self, session: AsyncSession) -> None:
+        self.session = session
+
+    async def add_question(self, data: QuestionEditRequest):
+        vals = dict(data)
+        return await QuestionDb(self.session).add_question(vals)
+
+    async def remove_question(self, id_: int):
+        await QuestionDb(self.session).remove_question(id_)
+
+    async def edit_question_by_id(self, vals: dict):
+        id_ = vals.pop("id")
+        res = await QuestionDb(self.session).edit_question_by_id(id_, vals)
+        return res[0].id if res else None
+
+    async def find_all_answers(self, q_id: int):
+        pass
+
+    async def find_correct_answers(self, q_id: int):
+        res = await QuestionDb(self.session).find_correct_answers(q_id)
+        resp = [u.__dict__ for u in res] if res else None
+        return resp
+
+    async def compare_correct_answer(self, params: dict):
+        q_id, a_ids = params["question_id"], params["answer_ids"]
+        a_ids = a_ids.dict()["answers"]
+        if not a_ids:
+            return False
+        res = await QuestionDb(self.session).find_correct_answers(q_id)
+        if not res:
+            return None
+        res = [r.id for r in res]
+        # print(res, a_ids)
+        return sorted(res) == sorted(a_ids)
+
+    async def get_question_by_id(self, id_: int):
+        res = await QuestionDb(self.session).get_question_by_id(id_)
+        return res[0].id if res else None
+
+    async def get_questions(self, data: QuestionListRequest):
+        res = await QuestionDb(self.session).get_questions(data)
+        # resp = [{"text": u.text, "id": u.id, "active": u.active} for u in res]
+        resp = [u.__dict__ for u in res]
+        return resp
+
+    def convert_quiz_response(self, res):
+        responses = {}
+        for question, *answers in res:
+            if question.id not in responses:
+                responses[question.id] = QuestionResponseInQuiz(
+                    text=question.text,
+                    id=question.id,
+                    active=question.active,
+                    answers=[],
+                )
+
+            for answer in answers:
+                if answer:
+                    responses[question.id].answers.append(
+                        AnswerInResponse(
+                            id=answer.id, text=answer.text, correct=answer.correct
+                        )
+                    )
+        return responses
+
+    async def get_questions_with_answers(self, data: QuestionListRequest):
+        res = await QuestionDb(self.session).get_questions_with_answers(data)
+        # resp = [{"text": u.text, "id": u.id, "active": u.active} for u in res]
+        responses = self.convert_quiz_response(res)
+        # responses = [u.__dict__ for u in res]
+        return responses
 
 
-class Db:
-    model = None
+class AnswersManager:
+    session = None
 
-    def __init__(self, model) -> None:
-        self.model = model
+    def __init__(self, session: AsyncSession) -> None:
+        self.session = session
 
-    async def select(self, session, conds=None):
-        if not conds:
-            conds = (1 == 1,)
-        q = sa.select(self.model).where(*conds)
-        result = await session.execute(q)
-        res = result.scalars().all()
-        data = [{"username": u.username, "id": u.id} for u in res]
-        return data
+    async def add_answer(self, data: AnswerRequest):
+        vals = data.dict()
+        try:
+            res = await AnswerDb(self.session).add_answer(vals)
+        except IntegrityError as err:
+            print(err)
+            return None
+        return res  # res[0].id if res else None
 
-    async def put(self, session, vals):
-        # username=data["name"], password=data["password"]
-        q = insert(self.model).values(**vals).on_conflict_do_nothing()
+    async def remove_answer(self, id_: int):
+        await AnswerDb(self.session).remove_answer(id_)
 
-        result = await session.execute(q)
-        if result.rowcount:
-            return result.returned_defaults[0]  # id
-        return None
+    async def get_answer_by_id(self, ans_id: int):
+        res = await AnswerDb(self.session).get_answer_by_id(ans_id)
+        return res[0].id if res else None
 
-    async def update(self, session, vals, conds=None):
-        # {self.model.active.key: self.model.active or data["active"]}
-        if not conds:
-            conds = (1 == 1,)
-        stmt = (
-            sa.update(self.model).where(*conds).values(**vals).returning(self.model.id)
-        )
-        result = list(await session.execute(stmt))
-        return result
-
-    async def delete(self, session, conds=None):
-        stmt = sa.delete(self.model).where(conds)
-        result = await session.execute(stmt)
-        # result.rowcount
-        return
+    async def get_answers_for_question(self, q_id: int):
+        res = await AnswerDb(self.session).get_answer_by_id(q_id)
+        # data = [{"username": u.username, "id": u.id} for u in res]
+        resp = [u.__dict__ for u in res]
+        return resp
