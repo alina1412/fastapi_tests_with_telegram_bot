@@ -1,12 +1,12 @@
-from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.exc import IntegrityError
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from service.db_watchers import AnswerDb, QuestionDb
 from service.schemas import (
     AnswerInResponse,
-    QuestionListRequest,
-    QuestionEditRequest,
     AnswerRequest,
+    QuestionEditRequest,
+    QuestionListRequest,
     QuestionResponse,
     QuestionResponseInQuiz,
 )

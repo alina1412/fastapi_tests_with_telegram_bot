@@ -2,9 +2,9 @@ import sqlalchemy as sa
 
 # from sqlalchemy import select, update, or_, delete
 from sqlalchemy.dialects.postgresql import insert
-from sqlalchemy.orm import lazyload, joinedload, load_only
+from sqlalchemy.orm import joinedload, lazyload, load_only
 
-from service.db_setup.models import Answer, User, Question
+from service.db_setup.models import Answer, Question, User
 from service.schemas import QuestionListRequest
 
 

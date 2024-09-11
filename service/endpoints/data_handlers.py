@@ -1,13 +1,13 @@
 import random
 from typing import Any, Dict, List, Optional, Union
-from pydantic import parse_obj_as
-from fastapi import APIRouter, Depends, HTTPException, status
 
+from fastapi import APIRouter, Depends, HTTPException, status
+from pydantic import parse_obj_as
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from service.config import key
-
 from service.db_setup.db_settings import get_session
+from service.db_setup.models import Question, User
 from service.db_watchers import UserDb
 from service.schemas import (
     AnswerAddRequest,
@@ -16,13 +16,10 @@ from service.schemas import (
     QuestionAddRequest,
     QuestionEditRequest,
     QuestionListRequest,
-    QuestionEditRequest,
     QuestionResponse,
     QuizResponse,
 )
 from service.utils import AnswersManager, QuestionsManager
-from service.db_setup.models import Question, User
-
 
 api_router = APIRouter(
     prefix="/v1",

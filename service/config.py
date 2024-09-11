@@ -1,7 +1,7 @@
 import datetime
-import pytz
 from os import environ
 
+import pytz
 from dotenv import load_dotenv
 
 load_dotenv()

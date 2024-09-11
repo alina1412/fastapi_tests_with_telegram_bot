@@ -1,27 +1,26 @@
-import sqlalchemy as sa
-
 from datetime import datetime
 from typing import List
+
+import sqlalchemy as sa
 from sqlalchemy import (
+    TIMESTAMP,
+    Boolean,
     Column,
+    DateTime,
+    ForeignKey,
     Integer,
     String,
     Text,
-    ForeignKey,
-    Boolean,
-    DateTime,
-    TIMESTAMP,
-    text as sa_text,
 )
+from sqlalchemy import text as sa_text
 from sqlalchemy.orm import (
-    declarative_base,
     DeclarativeBase,
-    relationship,
     Mapped,
-    mapped_column,
     MappedAsDataclass,
+    declarative_base,
+    mapped_column,
+    relationship,
 )
-
 from sqlalchemy.sql import func
 
 from service.config import utcnow
