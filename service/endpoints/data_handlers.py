@@ -34,7 +34,7 @@ api_router = APIRouter(
 
 @api_router.post(
     "/show-quiz",
-    response_model=QuizResponse,
+    response_model=Optional[QuizResponse],
     responses={
         status.HTTP_400_BAD_REQUEST: {"description": "Bad request"},
         status.HTTP_422_UNPROCESSABLE_ENTITY: {"description": "Bad request"},

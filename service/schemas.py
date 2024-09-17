@@ -2,7 +2,7 @@ from datetime import datetime
 from enum import Enum
 from typing import Any, Dict, List, Optional, Tuple, Union
 
-from pydantic import BaseModel, Field, conlist
+from pydantic import BaseModel, Field, conlist, RootModel
 
 
 class UserInput(BaseModel):
@@ -10,7 +10,7 @@ class UserInput(BaseModel):
 
 
 class AnswersList(BaseModel):
-    answers: List[int] = Field(default_factory=list, min_items=1)
+    answers: List[int] = Field(default_factory=list, min_length=1)
 
 
 class QuestionOrderSchema(str, Enum):
@@ -20,21 +20,25 @@ class QuestionOrderSchema(str, Enum):
 
 
 class QuestionListRequest(BaseModel):
-    text: Optional[str] = Field(
-        example="question", description="search by text", default=None
-    )
-    active: Optional[int] = Field(
-        example=1, description="if question is active", default=1
-    )
+    text: Optional[str] = Field(description="search by text", default=None)
+    active: Optional[int] = Field(description="if question is active", default=1)
     order: Optional[QuestionOrderSchema] = Field(
-        example="updated_dt", description="order of results", default="id"
+        description="order of results", default="id"
     )
-    offset: Optional[int] = Field(
-        example=0, description="offset to show on page", default=0
-    )
-    limit: Optional[int] = Field(
-        example=50, description="limit to show on page", default=50
-    )
+    offset: Optional[int] = Field(description="offset to show on page", default=0)
+    limit: Optional[int] = Field(description="limit to show on page", default=50)
+
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "text": "question",
+                "active": 1,
+                "id": None,
+                "order": "updated_dt",
+                "offset": 0,
+                "limit": 50,
+            }
+        }
 
 
 class QuestionAddRequest(BaseModel):
@@ -42,7 +46,7 @@ class QuestionAddRequest(BaseModel):
     active: Optional[int] = Field(description="if question is active", default=1)
 
     class Config:
-        schema_extra = {
+        json_schema_extra = {
             "example": {
                 "text": "question1",
                 "active": 1,
@@ -57,7 +61,7 @@ class QuestionEditRequest(BaseModel):
     active: Optional[int] = Field(description="if question is active")
 
     class Config:
-        schema_extra = {
+        json_schema_extra = {
             "example": {
                 "text": "question1",
                 "active": 1,
@@ -71,18 +75,26 @@ class QuestionResponse(BaseModel):
     Schema for output.
     """
 
-    id: int = Field(example=1, description="id of a question")
-    text: str = Field(example="question 1", description="text")
-    active: int = Field(example=1, description="if question is active")
-    updated_dt: datetime = Field(
-        example="2024-09-10T08:19:54.531503+00:00", description="date"
-    )
+    id: int = Field(description="id of a question")
+    text: str = Field(description="text")
+    active: int = Field(description="if question is active")
+    updated_dt: datetime = Field(description="date")
+
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "id": 1,
+                "text": "question1",
+                "active": 1,
+                "updated_dt": "2024-09-10T08:19:54.531503+00:00",
+            }
+        }
 
 
 class QuizListResponse(BaseModel):
-    id: int = Field(example=1, description="id of a question")
-    text: str = Field(example="question 1", description="text")
-    active: int = Field(example=1, description="if question is active")
+    id: int = Field(description="id of a question")
+    text: str = Field(description="text")
+    active: int = Field(description="if question is active")
     answers: List[Any]
 
 
@@ -91,12 +103,15 @@ class AnswerRequest(BaseModel):
     Schema for input.
     """
 
-    id: Optional[int] = Field(example=1, description="id of an answer", default=None)
-    text: str = Field(
-        example="answer 1", description="text", min_length=1, max_length=50
-    )
-    correct: bool = Field(example=True, description="if answer is correct")
-    question_id: int = Field(example=1, description="id of a question")
+    id: Optional[int] = Field(description="id of an answer", default=None)
+    text: str = Field(description="text", min_length=1, max_length=50)
+    correct: bool = Field(description="if answer is correct")
+    question_id: int = Field(description="id of a question")
+
+    class Config:
+        json_schema_extra = {
+            "example": {"id": 1, "text": "answer", "correct": True, "question_id": 1}
+        }
 
 
 class AnswerAddRequest(BaseModel):
@@ -110,9 +125,14 @@ class AnswerAddRequest(BaseModel):
     correct: bool = Field(example=True, description="if answer is correct")
     question_id: int = Field(example=1, description="id of a question")
 
+    class Config:
+        json_schema_extra = {
+            "example": {"text": "answer", "correct": True, "question_id": 1}
+        }
+
 
 class AnswerSubmitRequest(BaseModel):
-    question_id: int = Field(example=1, description="id of a question")
+    question_id: int = Field(description="id of a question")
     answer_ids: AnswersList
 
 
@@ -121,10 +141,15 @@ class AnswerResponse(BaseModel):
     Schema for output.
     """
 
-    id: int = Field(example=1, description="id of an answer")
-    text: str = Field(example="question 1", description="text")
-    correct: bool = Field(example=True, description="if answer is correct")
-    question_id: int = Field(example=1, description="id of a question")
+    id: int = Field(description="id of an answer")
+    text: str = Field(description="text")
+    correct: bool = Field(description="if answer is correct")
+    question_id: int = Field(description="id of a question")
+
+    class Config:
+        json_schema_extra = {
+            "example": {"id": 1, "text": "answer", "correct": True, "question_id": 1}
+        }
 
 
 class AnswerInResponse(BaseModel):
@@ -140,13 +165,27 @@ class QuestionResponseInQuiz(BaseModel):
     answers: List[AnswerInResponse]
 
 
-class QuizResponse(BaseModel):
-    __root__: Dict[str, QuestionResponseInQuiz]
+class QuizResponse(RootModel):
+    root: Dict[int, QuestionResponseInQuiz]
 
 
 class DeleteResponse(BaseModel):
-    deleted_rows: int = Field(example=1, description="number of deleted rows")
+    deleted_rows: int = Field(description="number of deleted rows")
+
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "deleted_rows": 1,
+            }
+        }
 
 
 class AnswerAddResponse(BaseModel):
-    created: int = Field(example=1, description="id of created answer")
+    created: int = Field(description="id of created answer")
+
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "created": 1,
+            }
+        }
