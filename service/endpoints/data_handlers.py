@@ -1,18 +1,23 @@
 import random
 from typing import Any, Dict, List, Optional, Union
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
+from fastapi.responses import JSONResponse
 from pydantic import parse_obj_as
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.exc import IntegrityError
 
 from service.config import key
 from service.db_setup.db_settings import get_session
 from service.db_setup.models import Question, User
 from service.db_watchers import UserDb
+from service.errors import AnswerNotAddedError
 from service.schemas import (
     AnswerAddRequest,
+    AnswerAddResponse,
     AnswerRequest,
     AnswerSubmitRequest,
+    DeleteResponse,
     QuestionAddRequest,
     QuestionEditRequest,
     QuestionListRequest,
@@ -98,8 +103,27 @@ async def edit_question(
     return {"edited": res}
 
 
+@api_router.delete(
+    "/delete-question",
+    response_model=DeleteResponse,
+    responses={
+        status.HTTP_400_BAD_REQUEST: {"description": "Bad request"},
+        status.HTTP_422_UNPROCESSABLE_ENTITY: {"description": "Bad request"},
+    },
+)
+async def delete_question(
+    id: int,
+    session: AsyncSession = Depends(get_session),
+):
+    """request for delete_question"""
+    q_manager = QuestionsManager(session)
+    res = await q_manager.remove_question(id)
+    return {"deleted_rows": res}
+
+
 @api_router.post(
     "/add-answer",
+    response_model=AnswerAddResponse,
     status_code=status.HTTP_201_CREATED,
     responses={
         status.HTTP_400_BAD_REQUEST: {"description": "Bad request"},
@@ -111,10 +135,14 @@ async def add_answer(
 ):
     """request for add-answer"""
     a_manager = AnswersManager(session)
-    id_ = await a_manager.add_answer(data)
-    if id_:
-        return {"created": id_}
-    raise HTTPException(status.HTTP_400_BAD_REQUEST, f"answer not added")
+    try:
+        id_ = await a_manager.add_answer(data)
+    except IntegrityError as err:
+        raise HTTPException(
+            status.HTTP_400_BAD_REQUEST,
+            f"answer not added: {AnswerNotAddedError(err).add_detail}",
+        )
+    return {"created": id_}
 
 
 @api_router.put(
@@ -131,10 +159,28 @@ async def submit_answer(
     """request for compare_correct_answer"""
     params = dict(params)
     q_manager = QuestionsManager(session)
-    res = await q_manager.compare_correct_answer(params)
+    res = await q_manager.compare_correct_answers(params)
     if res is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, f"Not found")
     return {"correct": res}
+
+
+@api_router.delete(
+    "/delete-answer",
+    response_model=DeleteResponse,
+    responses={
+        status.HTTP_400_BAD_REQUEST: {"description": "Bad request"},
+        status.HTTP_422_UNPROCESSABLE_ENTITY: {"description": "Bad request"},
+    },
+)
+async def delete_answer(
+    id: int,
+    session: AsyncSession = Depends(get_session),
+):
+    """request for delete_answer"""
+    a_manager = AnswersManager(session)
+    res = await a_manager.remove_answer(id)
+    return {"deleted_rows": res}
 
 
 @api_router.put(

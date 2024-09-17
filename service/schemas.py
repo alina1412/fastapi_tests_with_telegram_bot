@@ -52,7 +52,7 @@ class QuestionAddRequest(BaseModel):
 
 
 class QuestionEditRequest(BaseModel):
-    id: int = Field(description="id of question")
+    id: int = Field(description="id of a question")
     text: Optional[str] = Field(description="text", min_length=1, max_length=255)
     active: Optional[int] = Field(description="if question is active")
 
@@ -71,7 +71,7 @@ class QuestionResponse(BaseModel):
     Schema for output.
     """
 
-    id: int = Field(example=1, description="id of question")
+    id: int = Field(example=1, description="id of a question")
     text: str = Field(example="question 1", description="text")
     active: int = Field(example=1, description="if question is active")
     updated_dt: datetime = Field(
@@ -80,7 +80,7 @@ class QuestionResponse(BaseModel):
 
 
 class QuizListResponse(BaseModel):
-    id: int = Field(example=1, description="id of question")
+    id: int = Field(example=1, description="id of a question")
     text: str = Field(example="question 1", description="text")
     active: int = Field(example=1, description="if question is active")
     answers: List[Any]
@@ -91,12 +91,12 @@ class AnswerRequest(BaseModel):
     Schema for input.
     """
 
-    id: Optional[int] = Field(example=1, description="id of answer", default=None)
+    id: Optional[int] = Field(example=1, description="id of an answer", default=None)
     text: str = Field(
         example="answer 1", description="text", min_length=1, max_length=50
     )
     correct: bool = Field(example=True, description="if answer is correct")
-    question_id: int = Field(example=1, description="id of question")
+    question_id: int = Field(example=1, description="id of a question")
 
 
 class AnswerAddRequest(BaseModel):
@@ -108,11 +108,11 @@ class AnswerAddRequest(BaseModel):
         example="answer 1", description="text", min_length=1, max_length=50
     )
     correct: bool = Field(example=True, description="if answer is correct")
-    question_id: int = Field(example=1, description="id of question")
+    question_id: int = Field(example=1, description="id of a question")
 
 
 class AnswerSubmitRequest(BaseModel):
-    question_id: int = Field(example=1, description="id of question")
+    question_id: int = Field(example=1, description="id of a question")
     answer_ids: AnswersList
 
 
@@ -121,10 +121,10 @@ class AnswerResponse(BaseModel):
     Schema for output.
     """
 
-    id: int = Field(example=1, description="id of answer")
+    id: int = Field(example=1, description="id of an answer")
     text: str = Field(example="question 1", description="text")
     correct: bool = Field(example=True, description="if answer is correct")
-    question_id: int = Field(example=1, description="id of question")
+    question_id: int = Field(example=1, description="id of a question")
 
 
 class AnswerInResponse(BaseModel):
@@ -142,3 +142,11 @@ class QuestionResponseInQuiz(BaseModel):
 
 class QuizResponse(BaseModel):
     __root__: Dict[str, QuestionResponseInQuiz]
+
+
+class DeleteResponse(BaseModel):
+    deleted_rows: int = Field(example=1, description="number of deleted rows")
+
+
+class AnswerAddResponse(BaseModel):
+    created: int = Field(example=1, description="id of created answer")

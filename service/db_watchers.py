@@ -24,8 +24,7 @@ class QuestionDb:
     async def remove_question(self, id_):
         stmt = sa.delete(Question).where(*(Question.id == id_,))
         result = await self.session.execute(stmt)
-        # result.rowcount
-        return
+        return result.rowcount
 
     async def edit_question_by_id(self, id_: int, vals: dict):
         vals = {k: v for k, v in vals.items() if v is not None}
@@ -129,6 +128,7 @@ class AnswerDb:
     async def remove_answer(self, id_):
         stmt = sa.delete(Answer).where(Answer.id == id_)
         result = await self.session.execute(stmt)
+        return result.rowcount
 
     async def get_answer_by_id(self, ans_id):
         q = sa.select(Answer).where(Answer.id == ans_id)
