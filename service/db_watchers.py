@@ -57,7 +57,7 @@ class QuestionDb:
         return res
 
     async def get_questions(self, data: QuestionListRequest):
-        data = data.dict()
+        data = data.model_dump()
         orders = {
             "id": Question.id.desc(),
             "updated_dt": Question.updated_dt.desc(),
@@ -79,7 +79,7 @@ class QuestionDb:
         return res
 
     async def get_questions_with_answers(self, data: QuestionListRequest):
-        data = data.dict()
+        data = data.model_dump()
         order = Question.id.desc() if data["order"] == "id" else None
 
         q = (

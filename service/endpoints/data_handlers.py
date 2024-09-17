@@ -99,7 +99,7 @@ async def edit_question(
 ):
     """request for edit_question"""
     q_manager = QuestionsManager(session)
-    res = await q_manager.edit_question_by_id(dict(params))
+    res = await q_manager.edit_question_by_id(params.model_dump())
     return {"edited": res}
 
 

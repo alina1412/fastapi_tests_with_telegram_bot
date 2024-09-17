@@ -24,7 +24,7 @@ class QuestionsManager:
         self.session = session
 
     async def add_question(self, data: QuestionEditRequest):
-        vals = dict(data)
+        vals = data.model_dump()
         return await QuestionDb(self.session).add_question(vals)
 
     async def remove_question(self, id_: int):
@@ -45,7 +45,7 @@ class QuestionsManager:
 
     async def compare_correct_answers(self, params: dict):
         q_id, a_ids = params["question_id"], params["answer_ids"]
-        a_ids = a_ids.dict()["answers"]
+        a_ids = a_ids.model_dump()["answers"]
         if not a_ids:
             return False
         res = await QuestionDb(self.session).find_correct_answers(q_id)
@@ -100,7 +100,7 @@ class AnswersManager:
         self.session = session
 
     async def add_answer(self, data: AnswerRequest):
-        vals = data.dict()
+        vals = data.model_dump()
         try:
             res = await AnswerDb(self.session).add_answer(vals)
         except IntegrityError as err:
