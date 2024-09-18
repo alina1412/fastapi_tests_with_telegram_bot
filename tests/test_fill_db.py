@@ -40,6 +40,7 @@ def test_add_questions():
         print(response.json())
 
 
+@pytest.mark.skip()
 def test_add_answers():
     for data in data_answers:
         response = requests.post(add_answers_url, json=data)

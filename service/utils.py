@@ -1,3 +1,5 @@
+import logging
+
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -12,6 +14,9 @@ from service.schemas import (
 )
 
 
+logger = logging.getLogger(__name__)
+
+
 class QuestionsManager:
     session = None
 
@@ -19,11 +24,11 @@ class QuestionsManager:
         self.session = session
 
     async def add_question(self, data: QuestionEditRequest):
-        vals = dict(data)
+        vals = data.model_dump()
         return await QuestionDb(self.session).add_question(vals)
 
     async def remove_question(self, id_: int):
-        await QuestionDb(self.session).remove_question(id_)
+        return await QuestionDb(self.session).remove_question(id_)
 
     async def edit_question_by_id(self, vals: dict):
         id_ = vals.pop("id")
@@ -38,9 +43,8 @@ class QuestionsManager:
         resp = [u.__dict__ for u in res] if res else None
         return resp
 
-    async def compare_correct_answer(self, params: dict):
+    async def compare_correct_answers(self, params: dict):
         q_id, a_ids = params["question_id"], params["answer_ids"]
-        a_ids = a_ids.dict()["answers"]
         if not a_ids:
             return False
         res = await QuestionDb(self.session).find_correct_answers(q_id)
@@ -95,16 +99,16 @@ class AnswersManager:
         self.session = session
 
     async def add_answer(self, data: AnswerRequest):
-        vals = data.dict()
+        vals = data.model_dump()
         try:
             res = await AnswerDb(self.session).add_answer(vals)
         except IntegrityError as err:
-            print(err)
-            return None
+            logger.error(err)
+            raise err
         return res  # res[0].id if res else None
 
     async def remove_answer(self, id_: int):
-        await AnswerDb(self.session).remove_answer(id_)
+        return await AnswerDb(self.session).remove_answer(id_)
 
     async def get_answer_by_id(self, ans_id: int):
         res = await AnswerDb(self.session).get_answer_by_id(ans_id)
