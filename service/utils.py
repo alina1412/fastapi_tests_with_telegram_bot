@@ -45,7 +45,6 @@ class QuestionsManager:
 
     async def compare_correct_answers(self, params: dict):
         q_id, a_ids = params["question_id"], params["answer_ids"]
-        a_ids = a_ids.model_dump()["answers"]
         if not a_ids:
             return False
         res = await QuestionDb(self.session).find_correct_answers(q_id)

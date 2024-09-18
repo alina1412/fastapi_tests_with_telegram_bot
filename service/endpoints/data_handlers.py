@@ -19,6 +19,7 @@ from service.schemas import (
     AnswerSubmitRequest,
     DeleteResponse,
     QuestionAddRequest,
+    QuestionAddResponse,
     QuestionEditRequest,
     QuestionListRequest,
     QuestionResponse,
@@ -70,6 +71,7 @@ async def get_questions(
 @api_router.post(
     "/add-question",
     status_code=status.HTTP_201_CREATED,
+    response_model=QuestionAddResponse,
     responses={
         status.HTTP_400_BAD_REQUEST: {"description": "Bad request"},
         status.HTTP_422_UNPROCESSABLE_ENTITY: {"description": "Bad request"},
@@ -94,12 +96,15 @@ async def add_question(
     },
 )
 async def edit_question(
-    params: QuestionEditRequest = Depends(),
+    # id: int,
+    params=Depends(QuestionEditRequest),
     session: AsyncSession = Depends(get_session),
 ):
     """request for edit_question"""
     q_manager = QuestionsManager(session)
-    res = await q_manager.edit_question_by_id(params.model_dump())
+    d = params.model_dump()
+    # d['id'] = id
+    res = await q_manager.edit_question_by_id(d)
     return {"edited": res}
 
 
@@ -145,7 +150,7 @@ async def add_answer(
     return {"created": id_}
 
 
-@api_router.put(
+@api_router.post(
     "/submit-answer",
     responses={
         status.HTTP_400_BAD_REQUEST: {"description": "Bad request"},

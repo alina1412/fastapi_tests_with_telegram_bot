@@ -9,8 +9,8 @@ class UserInput(BaseModel):
     username: str
 
 
-class AnswersList(BaseModel):
-    answers: List[int] = Field(default_factory=list, min_length=1)
+# class AnswersList(BaseModel):
+# answers: List[int] = Field(default_factory=list, min_length=1)
 
 
 class QuestionOrderSchema(str, Enum):
@@ -57,15 +57,17 @@ class QuestionAddRequest(BaseModel):
 
 class QuestionEditRequest(BaseModel):
     id: int = Field(description="id of a question")
-    text: Optional[str] = Field(description="text", min_length=1, max_length=255)
-    active: Optional[int] = Field(description="if question is active")
+    text: Optional[str] = Field(
+        description="text", min_length=1, max_length=255, default=None
+    )
+    active: Optional[int] = Field(description="if question is active", default=None)
 
     class Config:
         json_schema_extra = {
             "example": {
                 "text": "question1",
                 "active": 1,
-                "id": None,
+                "id": 1,
             }
         }
 
@@ -133,7 +135,10 @@ class AnswerAddRequest(BaseModel):
 
 class AnswerSubmitRequest(BaseModel):
     question_id: int = Field(description="id of a question")
-    answer_ids: AnswersList
+    answer_ids: List[int] = Field(default_factory=list, min_length=0)  # AnswersList
+
+    class Config:
+        json_schema_extra = {"example": {"answer_ids": [1], "question_id": 1}}
 
 
 class AnswerResponse(BaseModel):
@@ -182,6 +187,17 @@ class DeleteResponse(BaseModel):
 
 class AnswerAddResponse(BaseModel):
     created: int = Field(description="id of created answer")
+
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "created": 1,
+            }
+        }
+
+
+class QuestionAddResponse(BaseModel):
+    created: int = Field(description="id of created question")
 
     class Config:
         json_schema_extra = {
