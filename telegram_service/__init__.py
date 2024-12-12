@@ -1,9 +1,11 @@
+import json
 import os
 
 import aiohttp
 import requests
 
 from telegram_service.process import get_keyboard, load_questions
+from telegram_service.tg_config import logger
 
 token = os.environ.get("TELEGRAM_BOT_API_TOKEN")
 assert token
@@ -43,19 +45,26 @@ class TG_WORK_QUEUE:
         )
 
     async def send_reply_keyboard(self, chat_id, text, buttons):
-        keyboard = {"keyboard": buttons, "one_time_keyboard": True}
+        keyboard = json.dumps({"keyboard": buttons, "one_time_keyboard": True})
 
         data = {"chat_id": chat_id, "text": text, "reply_markup": keyboard}
+        url = f"https://api.telegram.org/bot{self.token}/sendMessage"
 
-        response = requests.post(
-            f"https://api.telegram.org/bot{self.token}/sendMessage", json=data
-        )
-
-        return response
+        async with aiohttp.ClientSession() as client:
+            async with client.post(url, data=data) as resp:
+                if resp.status != 200:
+                    try:
+                        err = json.loads(resp.content._buffer[0])["description"]
+                        logger.error("tg error %", err)
+                    except Exception as exc:
+                        logger.error("tg error")
+                        return None
+                return resp
 
 
 class TG_PULL_QUEUE:
     token = token
+    offset = 0
 
     def __init__(self):
         self.offset = 0
@@ -65,19 +74,15 @@ class TG_PULL_QUEUE:
         url = f"https://api.telegram.org/bot{self.token}/{method_name}"
         params = {"offset": self.offset, "timeout": 30, "allowed_updates": []}
 
-        response = requests.post(url, params)
-        response_json = response.json()
-        if response_json["ok"]:
-            return response_json["result"]
-        # async with aiohttp.ClientSession() as session:
-        #     async with session.post(
-        #         url, data=params, headers={"Content-Type": "application/json"}
-        #     ) as resp:
-        #         json_resp = await resp.json()
-        #         print(json_resp)
-        #         if json_resp["ok"]:
-        #             messages = json_resp["result"]
-        #             return messages
+        async with aiohttp.ClientSession() as session:
+            async with session.post(
+                url, data=params, headers={"Content-Type": "application/json"}
+            ) as resp:
+                json_resp = await resp.json()
+                logger.info(json_resp)
+                if json_resp["ok"]:
+                    messages = json_resp["result"]
+                    return messages
 
     async def get_new_messages(self):
         messages = await self.get_tg_updates()

@@ -2,9 +2,7 @@ import asyncio
 
 import aiohttp
 
-from service.config import logger
-
-URL_START = "http://localhost:8000"
+from telegram_service.tg_config import logger, URL_START
 
 
 async def load_json_post_handler(url, data=None):
@@ -13,7 +11,7 @@ async def load_json_post_handler(url, data=None):
             url, data=data, headers={"Content-Type": "application/json"}
         ) as resp:
             json_resp = await resp.json()
-            print(json_resp)
+            logger.info(json_resp)
             return json_resp
 
 
@@ -23,7 +21,7 @@ async def load_json_put_handler(url, data=None):
             url, data=data, headers={"Content-Type": "application/json"}
         ) as resp:
             json_resp = await resp.json()
-            print(json_resp)
+            logger.info(json_resp)
             return json_resp
 
 
@@ -35,7 +33,7 @@ async def load_json_delete_handler(url, kwargs=None):
             headers={"Content-Type": "application/json"},
         ) as resp:
             json_resp = await resp.json()
-            print(json_resp)
+            logger.info(json_resp)
             return json_resp
 
 
