@@ -1,6 +1,8 @@
 import asyncio
+
 import aiohttp
 
+from service.config import logger
 
 URL_START = "http://localhost:8000"
 
@@ -47,7 +49,7 @@ async def load_quiz():
         "text": "question"
     }"""
     return await load_json_post_handler(url, data)
-    
+
 
 async def load_questions():
     url = URL_START + "/v1/questions"
@@ -115,4 +117,4 @@ async def delete_answer():
 
 
 async def get_keyboard():
-    ...
+    pass

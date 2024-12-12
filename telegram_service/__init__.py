@@ -3,14 +3,13 @@ import os
 import aiohttp
 import requests
 
-from telegram_service.process import load_questions, get_keyboard
+from telegram_service.process import get_keyboard, load_questions
 
 token = os.environ.get("TELEGRAM_BOT_API_TOKEN")
 assert token
 
 
 class TG_WORK_QUEUE:
-
     token = token
 
     async def process(self, message):
@@ -39,7 +38,9 @@ class TG_WORK_QUEUE:
                 {"text": "Button 4", "callback_data": "button4"},
             ],
         ]
-        await self.send_reply_keyboard(chat_id=chat_id, text="vvv", buttons=buttons)
+        await self.send_reply_keyboard(
+            chat_id=chat_id, text="vvv", buttons=buttons
+        )
 
     async def send_reply_keyboard(self, chat_id, text, buttons):
         keyboard = {"keyboard": buttons, "one_time_keyboard": True}
@@ -54,7 +55,6 @@ class TG_WORK_QUEUE:
 
 
 class TG_PULL_QUEUE:
-
     token = token
 
     def __init__(self):

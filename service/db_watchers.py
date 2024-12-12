@@ -4,6 +4,7 @@ import sqlalchemy as sa
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import joinedload, lazyload, load_only
 
+from service.config import logger
 from service.db_setup.models import Answer, Question, User
 from service.schemas import QuestionListRequest
 
@@ -18,6 +19,7 @@ class QuestionDb:
         q = insert(Question).values(**vals).on_conflict_do_nothing()
         result = await self.session.execute(q)
         if result.rowcount:
+            logger.info("added %s", result.returned_defaults[0])
             return result.returned_defaults[0]  # id
         return None
 

@@ -14,5 +14,5 @@ api_router = APIRouter(
     },
 )
 async def post_data1():
-    """"""
+    """Example"""
     return {"data": "user_token_data"}

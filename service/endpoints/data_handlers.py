@@ -1,11 +1,11 @@
 import random
-from typing import Any, Dict, List, Optional, Union
+from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from service.config import key
+from service.config import logger
 from service.db_setup.db_settings import get_session
 from service.db_setup.models import Question, User
 from service.db_watchers import UserDb
@@ -42,7 +42,7 @@ api_router = APIRouter(
 async def show_quiz(
     data: QuestionListRequest, session: AsyncSession = Depends(get_session)
 ):  # -> list[QuestionResponse]
-    """show quiz-test page"""
+    """Show quiz-test page"""
     q_manager = QuestionsManager(session)
     questions = await q_manager.get_questions_with_answers(data)
     # return QuizResponse.parse_obj(questions)
@@ -60,7 +60,7 @@ async def show_quiz(
 async def get_questions(
     data: QuestionListRequest, session: AsyncSession = Depends(get_session)
 ) -> list[QuestionResponse]:
-    """get_questions"""
+    """Get_questions"""
     q_manager = QuestionsManager(session)
     questions = await q_manager.get_questions(data)
     return questions if questions else []
@@ -78,7 +78,7 @@ async def get_questions(
 async def add_question(
     data: QuestionAddRequest, session: AsyncSession = Depends(get_session)
 ):
-    """request for add-question"""
+    """Request for add-question"""
     q_manager = QuestionsManager(session)
     id_ = await q_manager.add_question(data)
     if id_:
@@ -98,7 +98,7 @@ async def edit_question(
     params=Depends(QuestionEditRequest),
     session: AsyncSession = Depends(get_session),
 ):
-    """request for edit_question"""
+    """Request for edit_question"""
     q_manager = QuestionsManager(session)
     d = params.model_dump()
     # d['id'] = id
@@ -118,7 +118,7 @@ async def delete_question(
     id: int,
     session: AsyncSession = Depends(get_session),
 ):
-    """request for delete_question"""
+    """Request for delete_question"""
     q_manager = QuestionsManager(session)
     res = await q_manager.remove_question(id)
     return {"deleted_rows": res}
@@ -136,7 +136,7 @@ async def delete_question(
 async def add_answer(
     data: AnswerAddRequest, session: AsyncSession = Depends(get_session)
 ):
-    """request for add-answer"""
+    """Request for add-answer"""
     a_manager = AnswersManager(session)
     try:
         id_ = await a_manager.add_answer(data)
@@ -144,7 +144,7 @@ async def add_answer(
         raise HTTPException(
             status.HTTP_400_BAD_REQUEST,
             f"answer not added: {AnswerNotAddedError(err).add_detail}",
-        )
+        ) from err
     return {"created": id_}
 
 
@@ -159,12 +159,12 @@ async def submit_answer(
     params: AnswerSubmitRequest = Depends(),
     session: AsyncSession = Depends(get_session),
 ):
-    """request for compare_correct_answer"""
+    """Request for compare_correct_answer"""
     params = dict(params)
     q_manager = QuestionsManager(session)
     res = await q_manager.compare_correct_answers(params)
     if res is None:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, f"Not found")
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Not found")
     return {"correct": res}
 
 
@@ -180,7 +180,7 @@ async def delete_answer(
     id: int,
     session: AsyncSession = Depends(get_session),
 ):
-    """request for delete_answer"""
+    """Request for delete_answer"""
     a_manager = AnswersManager(session)
     res = await a_manager.remove_answer(id)
     return {"deleted_rows": res}
@@ -196,7 +196,7 @@ async def delete_answer(
 async def user_handler(
     q_id=None, new_data=None, session: AsyncSession = Depends(get_session)
 ):
-    """example with postgres sqlalchemy"""
+    """Example with postgres sqlalchemy"""
     add_data = new_data if new_data else str(random.random())
     print(add_data)
     db = UserDb(User)
@@ -214,6 +214,6 @@ async def user_handler(
         await db.delete(session, id_)
     except Exception as exc:
         id_ = None
-        print(exc)
-        raise HTTPException(status.HTTP_400_BAD_REQUEST, f"No") from exc
+        logger.error("error", exc_info=exc)
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "No") from exc
     return {"user_id": id_}

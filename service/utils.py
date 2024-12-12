@@ -1,8 +1,7 @@
-import logging
-
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from service.config import logger
 from service.db_watchers import AnswerDb, QuestionDb
 from service.schemas import (
     AnswerInResponse,
@@ -12,8 +11,6 @@ from service.schemas import (
     QuestionResponse,
     QuestionResponseInQuiz,
 )
-
-logger = logging.getLogger(__name__)
 
 
 class QuestionsManager:
@@ -104,7 +101,7 @@ class AnswersManager:
         try:
             res = await AnswerDb(self.session).add_answer(vals)
         except IntegrityError as err:
-            logger.error(err)
+            logger.error("error ", exc_info=err)
             raise err
         return res  # res[0].id if res else None
 

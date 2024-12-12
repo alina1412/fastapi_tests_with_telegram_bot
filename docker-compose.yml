@@ -16,10 +16,10 @@ services:
       test: ["CMD-SHELL", "sh -c 'pg_isready -U ${DB_USERNAME} -d ${DB_NAME}'"]
       interval: 10s
       timeout: 5s
-    # volumes:
-    #   - ./.database_data:/var/lib/postgresql/data
+    volumes:
+      - ./.database_data:/var/lib/postgresql/data
 
 
-# volumes:
-#   .database_data:
-#     driver: local
+volumes:
+  .database_data:
+    driver: local

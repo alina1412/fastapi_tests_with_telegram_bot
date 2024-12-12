@@ -134,6 +134,8 @@ extend-ignore = [
     "D1",       # https://docs.astral.sh/ruff/rules/#pydocstyle-d
     "D205",     # https://docs.astral.sh/ruff/rules/blank-line-after-summary
     "D415",     # https://docs.astral.sh/ruff/rules/ends-in-punctuation
+    "D400",
+    "D401",
 
     "PLR2004",  # https://docs.astral.sh/ruff/rules/magic-value-comparison
     "PLR0904",  # https://docs.astral.sh/ruff/rules/too-many-public-methods 
