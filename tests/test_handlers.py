@@ -1,8 +1,8 @@
-import pytest_asyncio
 import asyncio
-import pytest
 import logging
 
+import pytest
+import pytest_asyncio
 
 pytest_plugins = ("pytest_asyncio",)
 logging.basicConfig(level=logging.DEBUG)

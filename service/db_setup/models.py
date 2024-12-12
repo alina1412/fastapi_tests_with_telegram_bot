@@ -11,8 +11,8 @@ from sqlalchemy import (
     Integer,
     String,
     Text,
+    text as sa_text,
 )
-from sqlalchemy import text as sa_text
 from sqlalchemy.orm import (
     DeclarativeBase,
     Mapped,

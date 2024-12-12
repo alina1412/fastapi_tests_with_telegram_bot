@@ -13,7 +13,6 @@ from service.schemas import (
     QuestionResponseInQuiz,
 )
 
-
 logger = logging.getLogger(__name__)
 
 
@@ -79,7 +78,9 @@ class QuestionsManager:
                 if answer:
                     responses[question.id].answers.append(
                         AnswerInResponse(
-                            id=answer.id, text=answer.text, correct=answer.correct
+                            id=answer.id,
+                            text=answer.text,
+                            correct=answer.correct,
                         )
                     )
         return responses

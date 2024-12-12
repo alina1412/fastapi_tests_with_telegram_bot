@@ -179,7 +179,10 @@ class UserDb:
         if not conds:
             conds = (1 == 1,)  # conds = (User.id == 103,)
         stmt = (
-            sa.update(self.model).where(*conds).values(**vals).returning(self.model.id)
+            sa.update(self.model)
+            .where(*conds)
+            .values(**vals)
+            .returning(self.model.id)
         )
         result = list(await session.execute(stmt))
         return result

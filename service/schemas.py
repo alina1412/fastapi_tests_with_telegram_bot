@@ -2,7 +2,7 @@ from datetime import datetime
 from enum import Enum
 from typing import Any, Dict, List, Optional, Tuple, Union
 
-from pydantic import BaseModel, Field, conlist, RootModel
+from pydantic import BaseModel, Field, RootModel, conlist
 
 
 class UserInput(BaseModel):
@@ -21,12 +21,18 @@ class QuestionOrderSchema(str, Enum):
 
 class QuestionListRequest(BaseModel):
     text: Optional[str] = Field(description="search by text", default=None)
-    active: Optional[int] = Field(description="if question is active", default=1)
+    active: Optional[int] = Field(
+        description="if question is active", default=1
+    )
     order: Optional[QuestionOrderSchema] = Field(
         description="order of results", default="id"
     )
-    offset: Optional[int] = Field(description="offset to show on page", default=0)
-    limit: Optional[int] = Field(description="limit to show on page", default=50)
+    offset: Optional[int] = Field(
+        description="offset to show on page", default=0
+    )
+    limit: Optional[int] = Field(
+        description="limit to show on page", default=50
+    )
 
     class Config:
         json_schema_extra = {
@@ -43,7 +49,9 @@ class QuestionListRequest(BaseModel):
 
 class QuestionAddRequest(BaseModel):
     text: str = Field(description="text", min_length=1, max_length=255)
-    active: Optional[int] = Field(description="if question is active", default=1)
+    active: Optional[int] = Field(
+        description="if question is active", default=1
+    )
 
     class Config:
         json_schema_extra = {
@@ -60,7 +68,9 @@ class QuestionEditRequest(BaseModel):
     text: Optional[str] = Field(
         description="text", min_length=1, max_length=255, default=None
     )
-    active: Optional[int] = Field(description="if question is active", default=None)
+    active: Optional[int] = Field(
+        description="if question is active", default=None
+    )
 
     class Config:
         json_schema_extra = {
@@ -112,7 +122,12 @@ class AnswerRequest(BaseModel):
 
     class Config:
         json_schema_extra = {
-            "example": {"id": 1, "text": "answer", "correct": True, "question_id": 1}
+            "example": {
+                "id": 1,
+                "text": "answer",
+                "correct": True,
+                "question_id": 1,
+            }
         }
 
 
@@ -135,7 +150,9 @@ class AnswerAddRequest(BaseModel):
 
 class AnswerSubmitRequest(BaseModel):
     question_id: int = Field(description="id of a question")
-    answer_ids: List[int] = Field(default_factory=list, min_length=0)  # AnswersList
+    answer_ids: List[int] = Field(
+        default_factory=list, min_length=0
+    )  # AnswersList
 
     class Config:
         json_schema_extra = {"example": {"answer_ids": [1], "question_id": 1}}
@@ -153,7 +170,12 @@ class AnswerResponse(BaseModel):
 
     class Config:
         json_schema_extra = {
-            "example": {"id": 1, "text": "answer", "correct": True, "question_id": 1}
+            "example": {
+                "id": 1,
+                "text": "answer",
+                "correct": True,
+                "question_id": 1,
+            }
         }
 
 
