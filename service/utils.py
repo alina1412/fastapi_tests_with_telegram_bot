@@ -8,7 +8,7 @@ from service.schemas import (
     AnswerRequest,
     QuestionEditRequest,
     QuestionListRequest,
-    QuestionResponse,
+    # QuestionResponse,
     QuestionResponseInQuiz,
 )
 from service.db_setup.schemas import AnswerDto, QuestionDto

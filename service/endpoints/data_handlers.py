@@ -15,6 +15,7 @@ from service.schemas import (
     AnswerRequest,
     AnswerSubmitRequest,
     DeleteResponse,
+    IsCorrectAnsResponse,
     QuestionAddRequest,
     QuestionAddResponse,
     QuestionEditRequest,
@@ -166,7 +167,7 @@ async def submit_answer(
     res = await q_manager.compare_correct_answers(params)
     if res is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Not found")
-    return {"correct": res}
+    return IsCorrectAnsResponse(correct=res)
 
 
 @api_router.delete(

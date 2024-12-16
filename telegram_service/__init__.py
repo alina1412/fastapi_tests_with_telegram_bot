@@ -5,10 +5,9 @@ import aiohttp
 
 
 from telegram_service.process import (
+    CallHandlersQuestionAnswer,
+    CallHandlersTg,
     get_keyboard,
-    get_last_tg_id,
-    load_questions,
-    update_tg_id,
 )
 from telegram_service.tg_config import logger
 
@@ -21,6 +20,8 @@ class TG_WORK_QUEUE:
 
     async def process(self, message):
         # questions = await load_questions()
+        question_id = 36
+        await CallHandlersQuestionAnswer().submit_answer(question_id, ans=[0])
 
         if "callback_query" in message:
             ...
@@ -76,7 +77,7 @@ class TG_PULL_QUEUE:
         self.offset = 0
 
     async def get_tg_updates(self, method_name="getUpdates"):
-        """proceed not files"""
+        """Proceed not files"""
         url = f"https://api.telegram.org/bot{self.token}/{method_name}"
         params = {"offset": self.offset, "timeout": 30, "allowed_updates": []}
 
@@ -91,7 +92,7 @@ class TG_PULL_QUEUE:
                     return messages
 
     async def get_new_messages(self):
-        last_id = await get_last_tg_id()
+        last_id = await CallHandlersTg().get_last_tg_id()
         self.offset = last_id + 1
         messages = await self.get_tg_updates()
 
@@ -101,6 +102,6 @@ class TG_PULL_QUEUE:
                 new_mess.append(message)
                 self.offset = messages[-1]["update_id"]
         if new_mess:
-            await update_tg_id(messages[-1]["update_id"])
+            await CallHandlersTg().update_tg_id(messages[-1]["update_id"])
             self.offset = messages[-1]["update_id"] + 1
         return new_mess

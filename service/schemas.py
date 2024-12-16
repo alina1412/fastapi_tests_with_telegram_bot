@@ -196,6 +196,10 @@ class AnswerInResponse(BaseModel):
     correct: bool
 
 
+class IsCorrectAnsResponse(BaseModel):
+    correct: bool
+
+
 class QuestionResponseInQuiz(BaseModel):
     id: int
     text: str
