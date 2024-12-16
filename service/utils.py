@@ -11,6 +11,7 @@ from service.schemas import (
     QuestionResponse,
     QuestionResponseInQuiz,
 )
+from service.db_setup.schemas import AnswerDto, QuestionDto
 
 
 class QuestionsManager:
@@ -31,19 +32,17 @@ class QuestionsManager:
         res = await QuestionDb(self.session).edit_question_by_id(id_, vals)
         return res[0].id if res else None
 
-    async def find_all_answers(self, q_id: int):
+    async def find_all_answers(self, question_id: int):
         pass
 
-    async def find_correct_answers(self, q_id: int):
-        res = await QuestionDb(self.session).find_correct_answers(q_id)
-        resp = [u.__dict__ for u in res] if res else None
-        return resp
+    async def find_correct_answers(self, question_id: int):
+        return await QuestionDb(self.session).find_correct_answers(question_id)
 
     async def compare_correct_answers(self, params: dict):
-        q_id, a_ids = params["question_id"], params["answer_ids"]
+        question_id, a_ids = params["question_id"], params["answer_ids"]
         if not a_ids:
             return False
-        res = await QuestionDb(self.session).find_correct_answers(q_id)
+        res = await QuestionDb(self.session).find_correct_answers(question_id)
         if not res:
             return None
         res = [r.id for r in res]
@@ -112,8 +111,5 @@ class AnswersManager:
         res = await AnswerDb(self.session).get_answer_by_id(ans_id)
         return res[0].id if res else None
 
-    async def get_answers_for_question(self, q_id: int):
-        res = await AnswerDb(self.session).get_answer_by_id(q_id)
-        # data = [{"username": u.username, "id": u.id} for u in res]
-        resp = [u.__dict__ for u in res]
-        return resp
+    async def get_answers_for_question(self, question_id: int):
+        return await AnswerDb(self.session).get_answer_by_id(question_id)
