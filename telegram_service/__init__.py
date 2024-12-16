@@ -2,9 +2,14 @@ import json
 import os
 
 import aiohttp
-import requests
 
-from telegram_service.process import get_keyboard, load_questions
+
+from telegram_service.process import (
+    get_keyboard,
+    get_last_tg_id,
+    load_questions,
+    update_tg_id,
+)
 from telegram_service.tg_config import logger
 
 token = os.environ.get("TELEGRAM_BOT_API_TOKEN")
@@ -15,7 +20,8 @@ class TG_WORK_QUEUE:
     token = token
 
     async def process(self, message):
-        questions = await load_questions()
+        # questions = await load_questions()
+
         if "callback_query" in message:
             ...
             """# User clicked on an inline keyboard button
@@ -85,7 +91,16 @@ class TG_PULL_QUEUE:
                     return messages
 
     async def get_new_messages(self):
+        last_id = await get_last_tg_id()
+        self.offset = last_id + 1
         messages = await self.get_tg_updates()
-        if messages:
+
+        new_mess = []
+        for message in messages:
+            if message["update_id"] >= self.offset:
+                new_mess.append(message)
+                self.offset = messages[-1]["update_id"]
+        if new_mess:
+            await update_tg_id(messages[-1]["update_id"])
             self.offset = messages[-1]["update_id"] + 1
-        return messages
+        return new_mess

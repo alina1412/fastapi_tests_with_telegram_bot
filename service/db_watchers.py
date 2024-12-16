@@ -6,7 +6,7 @@ from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import joinedload, lazyload, load_only
 
 from service.config import logger
-from service.db_setup.models import Answer, Question, User
+from service.db_setup.models import Answer, Question, User, TgUpdate
 from service.schemas import QuestionListRequest
 from service.db_setup.schemas import AnswerDto, QuestionDto
 
@@ -206,6 +206,23 @@ class AnswerDb:
             )
             for elem in res
         ]
+
+
+class TgDb:
+    def __init__(self, session: AsyncSession) -> None:
+        self.session = session
+
+    async def update_tg_id(self, id_: int):
+        query = (
+            sa.update(TgUpdate)
+            .where(TgUpdate.id == sa.select(TgUpdate.id).limit(1))
+            .values(**{"id": id_})
+        )
+        await self.session.execute(query)
+
+    async def get_last_tg_id(self):
+        query = sa.select(TgUpdate.id).limit(1)
+        return (await self.session.execute(query)).scalar_one_or_none()
 
 
 class UserDb:

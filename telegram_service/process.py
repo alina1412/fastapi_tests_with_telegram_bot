@@ -1,4 +1,5 @@
 import asyncio
+import json
 
 import aiohttp
 
@@ -100,6 +101,20 @@ async def edit_question():
     data = """[0]
            """
     return await load_json_put_handler(url, data)
+
+
+async def update_tg_id(upd_id):
+    data = json.dumps({"update_id": upd_id})
+    url = URL_START + "/tg.update"
+    return await load_json_put_handler(url, data=data)
+
+
+async def get_last_tg_id():
+    url = URL_START + "/tg.get_update_id"
+    async with aiohttp.ClientSession() as session:
+        async with session.get(url) as resp:
+            res = await resp.json()
+            return res["update_id"]
 
 
 async def delete_question():

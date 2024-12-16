@@ -14,7 +14,7 @@ settingenv = Config(".env")
 DB_NAME: str = settingenv("DB_NAME", cast=str)
 DB_HOST: str = settingenv("DB_HOST", default="localhost", cast=str)
 DB_USERNAME: str = settingenv("DB_USERNAME", cast=str)
-DB_PORT: int = settingenv("DB_PORT", cast=str)
+DB_PORT: str = settingenv("DB_PORT", cast=str)
 DB_PASSWORD: str = settingenv("DB_PASSWORD", cast=str)
 
 config = context.config
@@ -35,7 +35,7 @@ if config.config_file_name is not None:
 # for 'autogenerate' support
 # from myapp import mymodel
 # target_metadata = mymodel.Base.metadata
-from service.db_setup.models import User, Base, Question, Answer
+from service.db_setup.models import User, Base, Question, Answer, TgUpdate
 target_metadata = Base.metadata
 
 

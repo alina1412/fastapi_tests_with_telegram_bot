@@ -73,5 +73,11 @@ class User(Base):
     active = Column(Integer, nullable=False, default=1)
 
 
+class TgUpdate(Base):
+    __tablename__ = "tg_update"
+
+    id = Column(Integer, primary_key=True)
+
+
 # create_engine
 # Base.metadata.create_all()

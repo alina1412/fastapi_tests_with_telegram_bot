@@ -179,6 +179,17 @@ class AnswerResponse(BaseModel):
         }
 
 
+class TgUpdateIdRequest(BaseModel):
+    update_id: int = Field(description="update_id")
+
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "update_id": 0,
+            }
+        }
+
+
 class AnswerInResponse(BaseModel):
     id: int
     text: str
