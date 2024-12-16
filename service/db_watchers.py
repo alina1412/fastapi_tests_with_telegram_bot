@@ -30,7 +30,9 @@ class QuestionDb:
         result = await self.session.execute(query)
         return result.rowcount
 
-    async def edit_question_by_id(self, id_: int, vals: dict):
+    async def edit_question_by_id(
+        self, id_: int, vals: dict
+    ) -> QuestionDto | None:
         vals = {k: v for k, v in vals.items() if v is not None}
         if not vals:
             return None
@@ -38,10 +40,20 @@ class QuestionDb:
             sa.update(Question)
             .where(Question.id == id_)
             .values(**vals)
-            .returning(Question.id)
+            .returning(Question)
         )
-        result = list(await self.session.execute(query))
-        return result
+        elem = (await self.session.execute(query)).scalar_one_or_none()
+        return (
+            QuestionDto(
+                id=elem.id,
+                text=elem.text,
+                active=elem.active,
+                answers=[],
+                updated_dt=elem.updated_dt,
+            )
+            if elem
+            else None
+        )
 
     async def find_correct_answers(self, question_id: int) -> list[AnswerDto]:
         query = sa.select(Answer).where(
@@ -108,7 +120,9 @@ class QuestionDb:
             for elem in res
         ]
 
-    async def get_questions_with_answers(self, data: QuestionListRequest):
+    async def get_questions_with_answers(
+        self, data: QuestionListRequest
+    ) -> list[QuestionDto]:
         data = data.model_dump()
         order = Question.id.desc() if data["order"] == "id" else None
 
@@ -123,23 +137,25 @@ class QuestionDb:
             query = query.where(Question.text.ilike(f"%{data['text']}%"))
 
         query = query.join(Answer, Question.id == Answer.question_id)
-        # q = q.options(
-        #         joinedload(Question.answers).options(
-        #             load_only(
-        #                 Answer.id,
-        #                 Answer.text,
-        #                 Answer.correct,
-        #             )
-        #         ),
-        #         load_only(
-        #             Question.id,
-        #             Question.text,
-        #             Question.active,
-        #         ),)
         result = await self.session.execute(query)
-        # result = result.scalars()
-        # result = result.scalars().all()
-        return result
+        return [
+            QuestionDto(
+                id=question.id,
+                text=question.text,
+                active=question.active,
+                answers=[
+                    AnswerDto(
+                        id=res.id,
+                        text=res.text,
+                        correct=res.correct,
+                        question_id=res.question_id,
+                    )
+                    for res in answers
+                ],
+                updated_dt=question.updated_dt,
+            )
+            for question, *answers in result
+        ]
 
 
 class AnswerDb:

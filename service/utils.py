@@ -30,7 +30,7 @@ class QuestionsManager:
     async def edit_question_by_id(self, vals: dict):
         id_ = vals.pop("id")
         res = await QuestionDb(self.session).edit_question_by_id(id_, vals)
-        return res[0].id if res else None
+        return res.id if res else None
 
     async def find_correct_answers(self, question_id: int):
         return await QuestionDb(self.session).find_correct_answers(question_id)
@@ -55,31 +55,26 @@ class QuestionsManager:
 
     def convert_quiz_response(self, res):
         responses = {}
-        for question, *answers in res:
+        for question in res:
             if question.id not in responses:
                 responses[question.id] = QuestionResponseInQuiz(
                     text=question.text,
                     id=question.id,
                     active=question.active,
-                    answers=[],
-                )
-
-            for answer in answers:
-                if answer:
-                    responses[question.id].answers.append(
+                    answers=[
                         AnswerInResponse(
                             id=answer.id,
                             text=answer.text,
                             correct=answer.correct,
                         )
-                    )
+                        for answer in question.answers
+                    ],
+                )
         return responses
 
     async def get_questions_with_answers(self, data: QuestionListRequest):
         res = await QuestionDb(self.session).get_questions_with_answers(data)
-        # resp = [{"text": u.text, "id": u.id, "active": u.active} for u in res]
         responses = self.convert_quiz_response(res)
-        # responses = [u.__dict__ for u in res]
         return responses
 
 
