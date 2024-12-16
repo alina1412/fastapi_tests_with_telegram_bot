@@ -17,7 +17,7 @@ class QuestionDb:
     def __init__(self, session: AsyncSession) -> None:
         self.session = session
 
-    async def add_question(self, vals):
+    async def add_question(self, vals) -> int | None:
         query = insert(Question).values(**vals).on_conflict_do_nothing()
         result = await self.session.execute(query)
         if result.rowcount:
@@ -25,7 +25,7 @@ class QuestionDb:
             return result.returned_defaults[0]  # id
         return None
 
-    async def remove_question(self, id_: int):
+    async def remove_question(self, id_: int) -> int:
         query = sa.delete(Question).where(*(Question.id == id_,))
         result = await self.session.execute(query)
         return result.rowcount
@@ -42,9 +42,6 @@ class QuestionDb:
         )
         result = list(await self.session.execute(query))
         return result
-
-    async def find_all_answers(self, question_id):
-        pass
 
     async def find_correct_answers(self, question_id: int) -> list[AnswerDto]:
         query = sa.select(Answer).where(
@@ -68,13 +65,19 @@ class QuestionDb:
         res = result.scalars().first()
         return (
             QuestionDto(
-                id=res.id, text=res.text, active=res.active, answers=res.answers
+                id=res.id,
+                text=res.text,
+                active=res.active,
+                answers=[],
+                updated_dt=res.updated_dt,
             )
             if res
             else None
         )
 
-    async def get_questions(self, data: QuestionListRequest):
+    async def get_questions(
+        self, data: QuestionListRequest
+    ) -> list[QuestionDto]:
         data = data.model_dump()
         orders = {
             "id": Question.id.desc(),
@@ -94,7 +97,16 @@ class QuestionDb:
             query = query.where(Question.text.ilike(f"%{data['text']}%"))
         result = await self.session.execute(query)
         res = result.scalars().all()
-        return res
+        return [
+            QuestionDto(
+                id=elem.id,
+                text=elem.text,
+                active=elem.active,
+                answers=[],
+                updated_dt=elem.updated_dt,
+            )
+            for elem in res
+        ]
 
     async def get_questions_with_answers(self, data: QuestionListRequest):
         data = data.model_dump()
@@ -136,25 +148,36 @@ class AnswerDb:
     def __init__(self, session: AsyncSession) -> None:
         self.session = session
 
-    async def add_answer(self, vals):
+    async def add_answer(self, vals) -> int | None:
         query = insert(Answer).values(**vals)  # .on_conflict_do_nothing()
         result = await self.session.execute(query)
         if result.rowcount and result.returned_defaults:
             return result.returned_defaults[0]  # id
         return None
 
-    async def remove_answer(self, id_):
+    async def remove_answer(self, id_: int) -> int:
         query = sa.delete(Answer).where(Answer.id == id_)
         result = await self.session.execute(query)
         return result.rowcount
 
-    async def get_answer_by_id(self, ans_id):
+    async def get_answer_by_id(self, ans_id: int) -> AnswerDto | None:
         query = sa.select(Answer).where(Answer.id == ans_id)
         result = await self.session.execute(query)
-        res = result.scalars().all()
-        return res
+        res = result.scalars().first()
+        return (
+            AnswerDto(
+                id=res.id,
+                text=res.text,
+                correct=res.correct,
+                question_id=res.question_id,
+            )
+            if res
+            else None
+        )
 
-    async def get_answers_for_question(self, question_id) -> list[AnswerDto]:
+    async def get_answers_for_question(
+        self, question_id: int
+    ) -> list[AnswerDto]:
         query = sa.select(Answer).where(Answer.question_id == question_id)
         result = await self.session.execute(query)
         res = result.scalars().all()

@@ -7,7 +7,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from service.config import logger
 from service.db_setup.db_settings import get_session
-from service.db_setup.models import Question, User
 from service.db_watchers import UserDb
 from service.errors import AnswerNotAddedError
 from service.schemas import (
@@ -141,9 +140,11 @@ async def add_answer(
     try:
         id_ = await a_manager.add_answer(data)
     except IntegrityError as err:
+        text_err = f"answer not added: {AnswerNotAddedError(err).add_detail}"
+        logger.error(text_err)
         raise HTTPException(
             status.HTTP_400_BAD_REQUEST,
-            f"answer not added: {AnswerNotAddedError(err).add_detail}",
+            text_err,
         ) from err
     return {"created": id_}
 
@@ -184,36 +185,3 @@ async def delete_answer(
     a_manager = AnswersManager(session)
     res = await a_manager.remove_answer(id)
     return {"deleted_rows": res}
-
-
-@api_router.put(
-    "/edit-user",
-    responses={
-        status.HTTP_400_BAD_REQUEST: {"description": "Bad request"},
-        status.HTTP_422_UNPROCESSABLE_ENTITY: {"description": "Bad request"},
-    },
-)
-async def user_handler(
-    q_id=None, new_data=None, session: AsyncSession = Depends(get_session)
-):
-    """Example with postgres sqlalchemy"""
-    add_data = new_data if new_data else str(random.random())
-    print(add_data)
-    db = UserDb(User)
-    id_ = await db.put(session, add_data, "bbb")
-
-    id_ = 0
-
-    users = await db.select_all(session)
-    print(users)
-
-    res = await db.update(session)
-    id_ = res[0][0] if res and res[0] else None
-    try:
-        id_ = 3
-        await db.delete(session, id_)
-    except Exception as exc:
-        id_ = None
-        logger.error("error", exc_info=exc)
-        raise HTTPException(status.HTTP_400_BAD_REQUEST, "No") from exc
-    return {"user_id": id_}

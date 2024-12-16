@@ -21,7 +21,7 @@ api_router = APIRouter(
 async def put_data1(
     add_data=None, session: AsyncSession = Depends(get_session)
 ):
-    """"""
+    """Example"""
     add_data = add_data if add_data else str(random.random())
     print(add_data)
     return {"user_id": add_data}

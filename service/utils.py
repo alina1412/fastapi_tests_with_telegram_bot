@@ -32,9 +32,6 @@ class QuestionsManager:
         res = await QuestionDb(self.session).edit_question_by_id(id_, vals)
         return res[0].id if res else None
 
-    async def find_all_answers(self, question_id: int):
-        pass
-
     async def find_correct_answers(self, question_id: int):
         return await QuestionDb(self.session).find_correct_answers(question_id)
 
@@ -54,10 +51,7 @@ class QuestionsManager:
         return res[0].id if res else None
 
     async def get_questions(self, data: QuestionListRequest):
-        res = await QuestionDb(self.session).get_questions(data)
-        # resp = [{"text": u.text, "id": u.id, "active": u.active} for u in res]
-        resp = [u.__dict__ for u in res]
-        return resp
+        return await QuestionDb(self.session).get_questions(data)
 
     def convert_quiz_response(self, res):
         responses = {}
@@ -108,8 +102,9 @@ class AnswersManager:
         return await AnswerDb(self.session).remove_answer(id_)
 
     async def get_answer_by_id(self, ans_id: int):
-        res = await AnswerDb(self.session).get_answer_by_id(ans_id)
-        return res[0].id if res else None
+        return await AnswerDb(self.session).get_answer_by_id(ans_id)
 
     async def get_answers_for_question(self, question_id: int):
-        return await AnswerDb(self.session).get_answer_by_id(question_id)
+        return await AnswerDb(self.session).get_answers_for_question(
+            question_id
+        )
