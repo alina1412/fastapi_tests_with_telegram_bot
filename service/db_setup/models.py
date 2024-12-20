@@ -21,7 +21,7 @@ from sqlalchemy.orm import (
     mapped_column,
     relationship,
 )
-from sqlalchemy.sql import func
+# from sqlalchemy.sql import func
 
 from service.config import utcnow
 
@@ -70,7 +70,28 @@ class User(Base):
     id = Column(Integer, primary_key=True)
     username = Column(String(255), unique=True, nullable=False)
     password = Column(String(255), nullable=False)
-    active = Column(Integer, nullable=False, default=1)
+    active = Column(Integer, nullable=False, server_default="1")
+
+
+class Player(Base):
+    __tablename__ = "players"
+
+    id = Column(Integer, primary_key=True)
+    tg_id = Column(Integer, unique=True, nullable=False)
+    score = Column(Integer, nullable=False, server_default="0")
+
+
+class Rounds(Base):
+    __tablename__ = "rounds"
+
+    id = Column(Integer, primary_key=True)
+    asked = Column(Boolean, server_default="False")
+    question_id: Mapped[int] = mapped_column(
+        ForeignKey("questions.id", ondelete="CASCADE")
+    )
+    player_id: Mapped[int] = mapped_column(
+        ForeignKey("players.tg_id", ondelete="CASCADE")
+    )
 
 
 class TgUpdate(Base):
