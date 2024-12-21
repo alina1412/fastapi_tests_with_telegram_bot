@@ -21,7 +21,9 @@ class TG_WORK_QUEUE:
     async def process(self, message):
         # questions = await load_questions()
         question_id = 36
-        await CallHandlersQuestionAnswer().submit_answer(question_id, ans=[0])
+        await CallHandlersQuestionAnswer().check_round_answer(
+            question_id, ans=[0]
+        )
 
         if "callback_query" in message:
             ...

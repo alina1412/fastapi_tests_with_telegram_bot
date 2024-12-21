@@ -47,6 +47,13 @@ class QuestionListRequest(BaseModel):
         }
 
 
+class QuestionGetOneRequest(BaseModel):
+    question_id: Optional[int] = Field(
+        description="id of a question", default=0
+    )
+    tg_id: int = Field(description="tg_id of a player")
+
+
 class QuestionAddRequest(BaseModel):
     text: str = Field(description="text", min_length=1, max_length=255)
     active: Optional[int] = Field(
@@ -177,6 +184,10 @@ class AnswerResponse(BaseModel):
                 "question_id": 1,
             }
         }
+
+
+class TgPlayerIdRequest(BaseModel):
+    tg_id: int = Field(description="tg_id")
 
 
 class TgUpdateIdRequest(BaseModel):

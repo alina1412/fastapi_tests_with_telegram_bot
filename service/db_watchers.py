@@ -2,11 +2,20 @@ import sqlalchemy as sa
 from sqlalchemy.ext.asyncio import AsyncSession
 
 # from sqlalchemy import select, update, or_, delete
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.dialects.postgresql import insert
-from sqlalchemy.orm import joinedload, lazyload, load_only
+from sqlalchemy.sql.expression import false
+# from sqlalchemy.orm import joinedload, lazyload, load_only
 
 from service.config import logger
-from service.db_setup.models import Answer, Question, User, TgUpdate
+from service.db_setup.models import (
+    Answer,
+    Question,
+    User,
+    TgUpdate,
+    Rounds,
+    Player,
+)
 from service.schemas import QuestionListRequest
 from service.db_setup.schemas import AnswerDto, QuestionDto
 
@@ -274,3 +283,47 @@ class UserDb:
         result = await session.execute(query)
         # result.rowcount
         return
+
+
+class GameDb:
+    session = None
+
+    def __init__(self, session: AsyncSession) -> None:
+        self.session = session
+
+    async def create_new_rounds(self, user_tg_id: int, amount: int = 5) -> None:
+        """To Round model -> question_id, user_tg_id"""
+        sub_query_choice = (
+            sa.select(Question.id, sa.cast(user_tg_id, sa.Integer))
+            .order_by(sa.func.random())
+            .limit(amount)
+        )
+        query_insert_rounds = (
+            sa.insert(Rounds)
+            .from_select(["question_id", "player_id"], sub_query_choice)
+            .returning(Rounds.id)
+        )
+        try:
+            result = await self.session.execute(query_insert_rounds)
+        except IntegrityError as err:
+            logger.error("error ", exc_info=err)
+            raise err
+
+    async def delete_old_rounds(self, user_tg_id: int) -> None:
+        pass
+
+    async def raise_score(self, user_tg_id: int) -> int | None:
+        query = (
+            sa.update(Player)
+            .where(Player.tg_id == user_tg_id)
+            .values(**{"score": Player.__table__.c.score + 1})
+            .returning(Player.score)
+        )
+        return (await self.session.execute(query)).scalar_one_or_none()
+
+    async def get_next_question_id(self, user_tg_id: int) -> int | None:
+        query = sa.select(Rounds.question_id).where(
+            Rounds.player_id == user_tg_id, Rounds.asked == false()
+        )
+        result = await self.session.execute(query)
+        return result.scalars().first()

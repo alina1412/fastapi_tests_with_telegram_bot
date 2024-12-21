@@ -47,8 +47,7 @@ class QuestionsManager:
         return sorted(res) == sorted(a_ids)
 
     async def get_question_by_id(self, id_: int):
-        res = await QuestionDb(self.session).get_question_by_id(id_)
-        return res[0].id if res else None
+        return await QuestionDb(self.session).get_question_by_id(id_)
 
     async def get_questions(self, data: QuestionListRequest):
         return await QuestionDb(self.session).get_questions(data)
@@ -103,3 +102,12 @@ class AnswersManager:
         return await AnswerDb(self.session).get_answers_for_question(
             question_id
         )
+
+
+"""
+class GameManager:
+    session = None
+
+    def __init__(self, session: AsyncSession) -> None:
+        self.session = session
+"""

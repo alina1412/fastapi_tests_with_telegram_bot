@@ -64,7 +64,7 @@ class CallHandlersTg(CallHandlersBase):
                 return res["update_id"]
 
 
-class CallHandlersQuestionAnswer(CallHandlersBase):
+class CallHandlersQuizBulk(CallHandlersBase):
     async def load_quiz(self):
         url = URL_START + "/v1/show-quiz"
         data = """{
@@ -87,6 +87,33 @@ class CallHandlersQuestionAnswer(CallHandlersBase):
         questions = await self.load_json_post_handler(url, data)
         return [QuestionResponse(**question) for question in questions]
 
+
+class CallHandlersQuizGame(CallHandlersBase):
+    async def get_next_question(self, tg_id: int) -> QuestionResponse:
+        url = URL_START + "/v1/round-question"
+        data = json.dumps({"tg_id": tg_id})
+        question = await self.load_json_post_handler(url, data)
+        return QuestionResponse(**question) if question else None
+
+    async def edit_score_of_player(self, tg_id: int):
+        url = URL_START + "/v1/edit-score"
+        data = json.dumps({"tg_id": tg_id})
+        return await self.load_json_put_handler(url, data)
+
+    async def check_round_answer(
+        self, question_id: int, ans: int
+    ) -> IsCorrectAnsResponse | None:
+        url = (
+            URL_START
+            + "/v1/submit-answer"
+            + "?question_id={}".format(question_id)
+        )
+        ans = json.dumps([ans])
+        res = await self.load_json_post_handler(url, data=ans)
+        return IsCorrectAnsResponse(**res) if res else None
+
+
+class CallHandlersAdminFunc(CallHandlersBase):
     async def add_question(self, data):
         url = URL_START + "/v1/add-question"
         data = """{
@@ -94,27 +121,6 @@ class CallHandlersQuestionAnswer(CallHandlersBase):
             "text": "question"
         }"""
         return await self.load_json_post_handler(url, data)
-
-    async def add_answer(self, data):
-        url = URL_START + "/v1/add-answer"
-        data = """{
-            "correct": true,
-            "question_id": 1,
-            "text": "answer"
-        }"""
-        return await self.load_json_post_handler(url, data)
-
-    async def submit_answer(
-        self, question_id: int, ans: list
-    ) -> IsCorrectAnsResponse | None:
-        url = (
-            URL_START
-            + "/v1/submit-answer"
-            + "?question_id={}".format(question_id)
-        )
-        ans = json.dumps(ans)
-        res = await self.load_json_post_handler(url, data=ans)
-        return IsCorrectAnsResponse(**res) if res else None
 
     async def edit_question(self):
         q_id = 36
@@ -128,6 +134,15 @@ class CallHandlersQuestionAnswer(CallHandlersBase):
         ans = [0]
         data = json.dumps(ans)
         return await self.load_json_put_handler(url, data)
+
+    async def add_answer(self, data):
+        url = URL_START + "/v1/add-answer"
+        data = """{
+            "correct": true,
+            "question_id": 1,
+            "text": "answer"
+        }"""
+        return await self.load_json_post_handler(url, data)
 
     async def delete_question(self, q_id):
         url = URL_START + "/v1/delete-question" + "?id={}".format(q_id)
