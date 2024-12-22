@@ -20,6 +20,9 @@ class QuestionOrderSchema(str, Enum):
 
 
 class QuestionListRequest(BaseModel):
+    question_id: Optional[int] = Field(
+        description="id of a question", default=0
+    )
     text: Optional[str] = Field(description="search by text", default=None)
     active: Optional[int] = Field(
         description="if question is active", default=1
@@ -209,6 +212,10 @@ class AnswerInResponse(BaseModel):
 
 class IsCorrectAnsResponse(BaseModel):
     correct: bool
+
+
+class QuestionIdResponse(BaseModel):
+    question_id: int = Field(description="question_id")
 
 
 class QuestionResponseInQuiz(BaseModel):

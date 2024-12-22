@@ -3,7 +3,13 @@ import json
 
 import aiohttp
 
-from service.schemas import IsCorrectAnsResponse, QuestionResponse
+from service.schemas import (
+    IsCorrectAnsResponse,
+    QuestionResponse,
+    QuestionResponseInQuiz,
+    QuizResponse,
+)
+from telegram_service.schemas_tg import QuizOutDto
 from telegram_service.tg_config import logger, URL_START
 
 
@@ -65,16 +71,20 @@ class CallHandlersTg(CallHandlersBase):
 
 
 class CallHandlersQuizBulk(CallHandlersBase):
-    async def load_quiz(self):
+    async def load_quiz(self, data=None):
         url = URL_START + "/v1/show-quiz"
-        data = """{
-            "active": 1,
-            "limit": 50,
-            "offset": 0,
-            "order": "updated_dt",
-            "text": "question"
-        }"""
-        return await self.load_json_post_handler(url, data)
+        if not data:
+            data = json.dumps(
+                {
+                    "active": 1,
+                    "limit": 50,
+                    "offset": 0,
+                    "order": "updated_dt",
+                    "text": "question",
+                }
+            )
+        res = await self.load_json_post_handler(url, data)
+        return QuizResponse(**res)
 
     async def load_questions(self, data) -> list[QuestionResponse]:
         url = URL_START + "/v1/questions"
@@ -95,6 +105,45 @@ class CallHandlersQuizGame(CallHandlersBase):
         question = await self.load_json_post_handler(url, data)
         return QuestionResponse(**question) if question else None
 
+    async def next_question_with_ans_opts(
+        self, tg_id: int
+    ) -> QuestionResponseInQuiz | None:
+        url = URL_START + "/v1/round-question-id"
+        data = json.dumps({"tg_id": tg_id})
+        res = await self.load_json_post_handler(url, data)
+        if not res:
+            logger.info("not next question_id")
+            return
+        question_id = res["question_id"]
+        data = json.dumps(res)
+        questions_dict = await CallHandlersQuizBulk().load_quiz(data)
+        if not questions_dict:
+            return
+        return questions_dict.root[question_id]
+
+    async def transform_to_text_and_btns(
+        self, next_question: QuestionResponseInQuiz
+    ) -> QuizOutDto:
+        text = (
+            next_question.text
+            + "\n"
+            + "\n".join(
+                [f"{ans.id}: {ans.text}" for ans in next_question.answers]
+            )
+        )
+        buttons = [
+            [
+                {
+                    "text": ans.id,
+                    "callback_data": json.dumps(
+                        {"question_id": next_question.id, "choice": ans.id}
+                    ),
+                }
+                for ans in next_question.answers
+            ]
+        ]
+        return QuizOutDto(question=text, buttons=buttons)
+
     async def edit_score_of_player(self, tg_id: int):
         url = URL_START + "/v1/edit-score"
         data = json.dumps({"tg_id": tg_id})
@@ -108,9 +157,15 @@ class CallHandlersQuizGame(CallHandlersBase):
             + "/v1/submit-answer"
             + "?question_id={}".format(question_id)
         )
-        ans = json.dumps([ans])
+        ans = json.dumps(ans)
         res = await self.load_json_post_handler(url, data=ans)
         return IsCorrectAnsResponse(**res) if res else None
+
+    async def register_player_if_new(self, tg_id):
+        pass
+
+    async def get_score_of_player(self, tg_id):
+        return "your score is 10 (template)"
 
 
 class CallHandlersAdminFunc(CallHandlersBase):

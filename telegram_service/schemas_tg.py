@@ -11,3 +11,9 @@ class MessageInCallbackDto:
 class MessageInTextDto:
     chat_id: int
     text_input: str
+
+
+@dataclass
+class QuizOutDto:
+    question: str
+    buttons: list[list]

@@ -20,16 +20,11 @@ class TG_WORK_QUEUE:
     token = token
 
     async def process(self, message):
-        # questions = await load_questions()
-        '''question_id = 36
-        await CallHandlersQuizGame().check_round_answer(
-            question_id, ans=[0]
-        )'''
-
         if "callback_query" in message:
             message_dto = MessageInCallbackDto(
                 chat_id=message["callback_query"]["message"]["chat"]["id"],
                 callback_data=message["callback_query"]["data"],
+                # text=message["callback_query"]["message"]["text"]
             )
             await self.process_callback(message_dto)
         else:
@@ -40,7 +35,7 @@ class TG_WORK_QUEUE:
             if message_dto.text_input in ("/start", "/score"):
                 await self.process_commands(message_dto)
             elif message_dto.text_input == "test":
-                await self.send_particular_keyboard("", message_dto.chat_id)
+                await self.send_test_keyboard(message_dto.chat_id)
             elif message_dto.text_input == "clear":
                 await self.send_reply(message_dto.chat_id, "---")
 
@@ -52,36 +47,60 @@ class TG_WORK_QUEUE:
             await self.process_command_score(message)
 
     async def process_command_start(self, message: MessageInTextDto):
-        pass
+        quiz_manager = CallHandlersQuizGame()
+        await quiz_manager.register_player_if_new(message.chat_id)
 
     async def process_command_score(self, message: MessageInTextDto):
-        pass
+        quiz_manager = CallHandlersQuizGame()
+        score_text = await quiz_manager.get_score_of_player(message.chat_id)
+        await self.send_reply(message.chat_id, score_text)
 
     async def process_callback(self, message: MessageInCallbackDto):
         """User clicked on an inline keyboard button"""
-        pass
+        callback_data = json.loads(message.callback_data)
+        question_id = callback_data.get("question_id")
+        answer = int(callback_data.get("choice"))
+        quiz_manager = CallHandlersQuizGame()
+        if question_id:
+            iscorrect = await quiz_manager.check_round_answer(
+                question_id, ans=[answer]
+            )
+            await self.send_reply(message.chat_id, f"correct: {iscorrect}")
+            await quiz_manager.edit_score_of_player(message.chat_id)
+            next_question = await quiz_manager.next_question_with_ans_opts(
+                message.chat_id
+            )
+            quiz_out = await quiz_manager.transform_to_text_and_btns(
+                next_question
+            )
+            await self.send_reply_keyboard(
+                chat_id=message.chat_id,
+                text=quiz_out.question,
+                buttons=quiz_out.buttons,
+            )
 
-    async def send_particular_keyboard(self, message, chat_id):
-        data1 = json.dumps({"question_id": 1})
+    async def send_test_keyboard(self, chat_id):
         buttons = [
             [
-                {"text": "Button 1", "callback_data": '1'},
-                {"text": "Button 2", "callback_data": "button2"},
-            ],
-            # [
-            #     {"text": "Button 3", "callback_data": "button3"},
-            #     {"text": "Button 4", "callback_data": "button4"},
-            # ],
+                {
+                    "text": str(i),
+                    "callback_data": json.dumps(
+                        {"question_id": 1, "choice": i}
+                    ),
+                }
+                for i in (1, 2, 3, 4)
+            ]
         ]
+        text = "question: \n1: aa \n2: bb \n3: cc \n4: dd"
         await self.send_reply_keyboard(
-            chat_id=chat_id, text="vvv", buttons=buttons
+            chat_id=chat_id, text=text, buttons=buttons
         )
 
     async def send_reply_keyboard(self, chat_id, text, buttons):
         keyboard = json.dumps({"inline_keyboard": buttons})
         data = {"chat_id": chat_id, "text": text, "reply_markup": keyboard}
-        '''keyboard = json.dumps({"keyboard": buttons, "one_time_keyboard": True})
-        data = {"chat_id": chat_id, "text": text, "reply_markup": keyboard}'''
+        """keyboard = json.dumps({"keyboard": buttons, "one_time_keyboard": True})
+        data = {"chat_id": chat_id, "text": text, "reply_markup": keyboard}"""
         return await self.send_tg_message(data)
 
     async def send_reply(self, chat_id, text):
@@ -116,9 +135,11 @@ class TG_PULL_QUEUE:
     async def get_tg_updates(self, method_name="getUpdates"):
         """Proceed not files"""
         url = f"https://api.telegram.org/bot{self.token}/{method_name}"
-        params = {"offset": self.offset, "timeout": 30, 
-                  "allowed_updates": [] # "message", "inline_query", "callback_query"
-                  }
+        params = {
+            "offset": self.offset,
+            "timeout": 30,
+            "allowed_updates": [],  # "message", "inline_query", "callback_query"
+        }
 
         async with aiohttp.ClientSession() as session:
             async with session.post(
@@ -131,7 +152,6 @@ class TG_PULL_QUEUE:
                     return messages
                 else:
                     logger.error("json not ok")
-                
 
     async def get_new_messages(self):
         last_id = await CallHandlersTg().get_last_tg_id()

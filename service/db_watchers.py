@@ -144,6 +144,8 @@ class QuestionDb:
         )
         if data["text"]:
             query = query.where(Question.text.ilike(f"%{data['text']}%"))
+        if data.get("question_id"):
+            query = query.where(Question.id == data["question_id"])
 
         query = query.join(Answer, Question.id == Answer.question_id)
         result = await self.session.execute(query)

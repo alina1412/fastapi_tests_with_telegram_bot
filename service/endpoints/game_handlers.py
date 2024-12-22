@@ -7,6 +7,7 @@ from service.config import logger
 from service.db_setup.db_settings import get_session
 from service.schemas import (
     QuestionGetOneRequest,
+    QuestionIdResponse,
     QuestionResponse,
     TgPlayerIdRequest,
 )
@@ -49,6 +50,35 @@ async def get_round_question(
     if question is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Not found")
     return question
+
+
+@api_router.post(
+    "/round-question-id",
+    response_model=QuestionIdResponse,
+    responses={
+        status.HTTP_404_NOT_FOUND: {"description": "Not found"},
+        status.HTTP_400_BAD_REQUEST: {"description": "Bad request"},
+        status.HTTP_422_UNPROCESSABLE_ENTITY: {"description": "Bad request"},
+    },
+)
+async def get_round_question_id(
+    data: QuestionGetOneRequest, session: AsyncSession = Depends(get_session)
+) -> QuestionIdResponse:
+    """Get question_id next in round for this user"""
+    db_game = GameDb(session)
+    try:
+        await db_game.create_new_rounds(data.tg_id)
+    except IntegrityError as err:
+        text_err = "error. maybe tg_id is wrong"
+        logger.error(text_err)
+        raise HTTPException(
+            status.HTTP_400_BAD_REQUEST,
+            text_err,
+        ) from err
+    question_id = await db_game.get_next_question_id(data.tg_id)
+    if question_id is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Not found")
+    return QuestionIdResponse(question_id=question_id)
 
 
 @api_router.put(
