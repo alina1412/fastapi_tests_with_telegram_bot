@@ -214,6 +214,10 @@ class IsCorrectAnsResponse(BaseModel):
     correct: bool
 
 
+class ScoreResponse(BaseModel):
+    score: int
+
+
 class QuestionIdResponse(BaseModel):
     question_id: int = Field(description="question_id")
 

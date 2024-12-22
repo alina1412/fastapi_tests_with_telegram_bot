@@ -9,6 +9,7 @@ from service.schemas import (
     QuestionGetOneRequest,
     QuestionIdResponse,
     QuestionResponse,
+    ScoreResponse,
     TgPlayerIdRequest,
 )
 from service.utils import QuestionsManager
@@ -96,3 +97,40 @@ async def edit_player_score(
     db_game = GameDb(session)
     await db_game.raise_score(params.tg_id)
     return {"success": "1"}
+
+
+@api_router.post(
+    "/add-player",
+    responses={
+        status.HTTP_400_BAD_REQUEST: {"description": "Bad request"},
+        status.HTTP_422_UNPROCESSABLE_ENTITY: {"description": "Bad request"},
+    },
+)
+async def add_player(
+    params=Depends(TgPlayerIdRequest),
+    session: AsyncSession = Depends(get_session),
+):
+    """Request for add_player"""
+    db_game = GameDb(session)
+    await db_game.create_player(params.tg_id)
+    return {"success": "1"}
+
+
+@api_router.get(
+    "/player-score",
+    responses={
+        status.HTTP_404_NOT_FOUND: {"description": "Not found"},
+        status.HTTP_400_BAD_REQUEST: {"description": "Bad request"},
+        status.HTTP_422_UNPROCESSABLE_ENTITY: {"description": "Bad request"},
+    },
+)
+async def player_score(
+    params=Depends(TgPlayerIdRequest),
+    session: AsyncSession = Depends(get_session),
+):
+    """Request for player_score"""
+    db_game = GameDb(session)
+    score = await db_game.get_score_of_player(params.tg_id)
+    if score is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Not found")
+    return ScoreResponse(score=score)

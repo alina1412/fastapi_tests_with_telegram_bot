@@ -40,7 +40,7 @@ class TG_WORK_QUEUE:
                 await self.send_reply(message_dto.chat_id, "---")
 
     async def process_commands(self, message: MessageInTextDto):
-        text_input = message["message"]["text"]
+        text_input = message.text_input
         if text_input == "/start":
             await self.process_command_start(message)
         elif text_input == "/score":
@@ -49,11 +49,25 @@ class TG_WORK_QUEUE:
     async def process_command_start(self, message: MessageInTextDto):
         quiz_manager = CallHandlersQuizGame()
         await quiz_manager.register_player_if_new(message.chat_id)
+        await self.send_reply(message.chat_id, "ok")
+        await self.next_round(message)
 
     async def process_command_score(self, message: MessageInTextDto):
         quiz_manager = CallHandlersQuizGame()
         score_text = await quiz_manager.get_score_of_player(message.chat_id)
         await self.send_reply(message.chat_id, score_text)
+
+    async def next_round(self, message):
+        quiz_manager = CallHandlersQuizGame()
+        next_question = await quiz_manager.next_question_with_ans_opts(
+            message.chat_id
+        )
+        quiz_out = await quiz_manager.transform_to_text_and_btns(next_question)
+        await self.send_reply_keyboard(
+            chat_id=message.chat_id,
+            text=quiz_out.question,
+            buttons=quiz_out.buttons,
+        )
 
     async def process_callback(self, message: MessageInCallbackDto):
         """User clicked on an inline keyboard button"""
@@ -65,19 +79,11 @@ class TG_WORK_QUEUE:
             iscorrect = await quiz_manager.check_round_answer(
                 question_id, ans=[answer]
             )
-            await self.send_reply(message.chat_id, f"correct: {iscorrect}")
+            await self.send_reply(
+                message.chat_id, f"correct: {iscorrect.correct}"
+            )
             await quiz_manager.edit_score_of_player(message.chat_id)
-            next_question = await quiz_manager.next_question_with_ans_opts(
-                message.chat_id
-            )
-            quiz_out = await quiz_manager.transform_to_text_and_btns(
-                next_question
-            )
-            await self.send_reply_keyboard(
-                chat_id=message.chat_id,
-                text=quiz_out.question,
-                buttons=quiz_out.buttons,
-            )
+            await self.next_round(message)
 
     async def send_test_keyboard(self, chat_id):
         buttons = [

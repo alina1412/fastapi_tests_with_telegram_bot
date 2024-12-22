@@ -329,3 +329,19 @@ class GameDb:
         )
         result = await self.session.execute(query)
         return result.scalars().first()
+
+    async def create_player(self, user_tg_id: int) -> int | None:
+        query = (
+            insert(Player)
+            .values(**{"tg_id": user_tg_id})
+            .on_conflict_do_nothing()
+        )
+        result = await self.session.execute(query)
+        if result.rowcount:
+            return result.returned_defaults[0]  # id
+        return None
+
+    async def get_score_of_player(self, user_tg_id: int) -> int | None:
+        query = sa.select(Player.score).where(Player.tg_id == user_tg_id)
+        result = await self.session.execute(query)
+        return result.scalars().first()
