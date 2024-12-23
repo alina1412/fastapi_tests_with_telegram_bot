@@ -4,8 +4,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 # from sqlalchemy import select, update, or_, delete
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.dialects.postgresql import insert
-from sqlalchemy.sql.expression import false
-# from sqlalchemy.orm import joinedload, lazyload, load_only
+from sqlalchemy.sql.expression import false, true
+from sqlalchemy.orm import joinedload  # , lazyload, load_only
 
 from service.config import logger
 from service.db_setup.models import (
@@ -147,8 +147,11 @@ class QuestionDb:
         if data.get("question_id"):
             query = query.where(Question.id == data["question_id"])
 
-        query = query.join(Answer, Question.id == Answer.question_id)
+        query = query.options(joinedload(Question.answers)).where(
+            Question.id == Answer.question_id
+        )
         result = await self.session.execute(query)
+        result = result.scalars().unique()
         return [
             QuestionDto(
                 id=question.id,
@@ -161,11 +164,11 @@ class QuestionDb:
                         correct=res.correct,
                         question_id=res.question_id,
                     )
-                    for res in answers
+                    for res in question.answers
                 ],
                 updated_dt=question.updated_dt,
             )
-            for question, *answers in result
+            for question in result
         ]
 
 
@@ -329,6 +332,19 @@ class GameDb:
         )
         result = await self.session.execute(query)
         return result.scalars().first()
+
+    async def mark_question_answered(
+        self, question_id: int, user_tg_id: int
+    ) -> None:
+        query = (
+            sa.update(Rounds)
+            .where(
+                Rounds.player_id == user_tg_id,
+                Rounds.question_id == question_id,
+            )
+            .values(asked=true())
+        )
+        await self.session.execute(query)
 
     async def create_player(self, user_tg_id: int) -> int | None:
         query = (

@@ -83,6 +83,9 @@ class TG_WORK_QUEUE:
                 message.chat_id, f"correct: {iscorrect.correct}"
             )
             await quiz_manager.edit_score_of_player(message.chat_id)
+            await quiz_manager.mark_question_answered(
+                question_id, message.chat_id
+            )
             await self.next_round(message)
 
     async def send_test_keyboard(self, chat_id):

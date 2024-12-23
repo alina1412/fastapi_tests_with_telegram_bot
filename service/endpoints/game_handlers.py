@@ -68,7 +68,8 @@ async def get_round_question_id(
     """Get question_id next in round for this user"""
     db_game = GameDb(session)
     try:
-        await db_game.create_new_rounds(data.tg_id)
+        if not await db_game.get_next_question_id(data.tg_id):
+            await db_game.create_new_rounds(data.tg_id)
     except IntegrityError as err:
         text_err = "error. maybe tg_id is wrong"
         logger.error(text_err)
@@ -134,3 +135,21 @@ async def player_score(
     if score is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Not found")
     return ScoreResponse(score=score)
+
+
+@api_router.put(
+    "/mark-answered",
+    # response_model=QuestionIdResponse,
+    responses={
+        status.HTTP_404_NOT_FOUND: {"description": "Not found"},
+        status.HTTP_400_BAD_REQUEST: {"description": "Bad request"},
+        status.HTTP_422_UNPROCESSABLE_ENTITY: {"description": "Bad request"},
+    },
+)
+async def mark_answered(
+    data: QuestionGetOneRequest, session: AsyncSession = Depends(get_session)
+):
+    """Question mark_answered"""
+    db_game = GameDb(session)
+    await db_game.mark_question_answered(data.question_id, data.tg_id)
+    return {"success": "1"}

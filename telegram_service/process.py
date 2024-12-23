@@ -134,18 +134,21 @@ class CallHandlersQuizGame(CallHandlersBase):
             next_question.text
             + "\n"
             + "\n".join(
-                [f"{ans.id}: {ans.text}" for ans in next_question.answers]
+                [
+                    f"{ind}: {ans.text}"
+                    for ind, ans in enumerate(next_question.answers, start=1)
+                ]
             )
         )
         buttons = [
             [
                 {
-                    "text": ans.id,
+                    "text": ind,
                     "callback_data": json.dumps(
                         {"question_id": next_question.id, "choice": ans.id}
                     ),
                 }
-                for ans in next_question.answers
+                for ind, ans in enumerate(next_question.answers, start=1)
             ]
         ]
         return QuizOutDto(question=text, buttons=buttons)
@@ -154,6 +157,13 @@ class CallHandlersQuizGame(CallHandlersBase):
         url = URL_START + f"/v1/edit-score?tg_id={tg_id}"
         # data = json.dumps({"tg_id": tg_id})
         res_dict = await self.load_json_put_handler(url, "{}")
+        return "success" in res_dict
+
+    async def mark_question_answered(self, question_id: int, tg_id: int):
+        url = URL_START + f"/v1/mark-answered"
+        res_dict = await self.load_json_put_handler(
+            url, json.dumps({"tg_id": tg_id, "question_id": question_id})
+        )
         return "success" in res_dict
 
     async def check_round_answer(

@@ -6,7 +6,6 @@ from telegram_service import TG_PULL_QUEUE, TG_WORK_QUEUE
 
 
 async def telegram_main(tg: TG_PULL_QUEUE, wq: TG_WORK_QUEUE):
-    
     while True:
         for message in await tg.get_new_messages():
             await wq.process(message)

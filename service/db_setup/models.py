@@ -42,7 +42,8 @@ class Question(Base):
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     text: Mapped[str] = mapped_column(String(50), nullable=True)
     active: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
-    answers = relationship("Answer", backref="questions")
+    # answers = relationship("Answer", backref="questions")
+    answers = relationship("Answer", back_populates="question")
     # answers: Mapped[List["Answer"]] = relationship()
     updated_dt: Mapped[datetime] = mapped_column(
         sa.DateTime(timezone=True),
@@ -62,6 +63,7 @@ class Answer(Base):
     question_id: Mapped[int] = mapped_column(
         ForeignKey("questions.id", ondelete="CASCADE")
     )
+    question = relationship("Question", back_populates="answers")
 
 
 class User(Base):
