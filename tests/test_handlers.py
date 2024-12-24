@@ -4,6 +4,8 @@ import logging
 import pytest
 import pytest_asyncio
 
+from service.schemas import IsCorrectAnsResponse
+
 pytest_plugins = ("pytest_asyncio",)
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
@@ -90,7 +92,8 @@ async def test_submit_answer_handler(client):
     url = "/v1/submit-answer?question_id=" + str(q_id)
     response = client.post(url, json=[id_])
     assert response.status_code == 200
-    assert "correct" in response.json()
+    res = IsCorrectAnsResponse(**response.json())
+    assert res.correct
 
 
 async def test_delete_answer_handler(client):
