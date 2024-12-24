@@ -7,6 +7,8 @@ from service.db_watchers import AnswerDb, QuestionDb
 from service.schemas import (
     AnswerInResponse,
     AnswerRequest,
+    AnswerSubmitRequest,
+    IsCorrectAnsResponse,
     QuestionEditRequest,
     QuestionListRequest,
     QuestionResponseInQuiz,
@@ -34,16 +36,27 @@ class QuestionsManager:
     async def find_correct_answers(self, question_id: int) -> list[AnswerDto]:
         return await QuestionDb(self.session).find_correct_answers(question_id)
 
-    async def compare_correct_answers(self, params: dict):
-        question_id, a_ids = params["question_id"], params["answer_ids"]
-        if not a_ids:
-            return False
-        res = await QuestionDb(self.session).find_correct_answers(question_id)
-        if not res:
+    async def compare_correct_answers(
+        self, params: AnswerSubmitRequest
+    ) -> IsCorrectAnsResponse | None:
+        question_id, user_ans_ids = params.question_id, params.answer_ids
+        if not user_ans_ids:
             return None
-        res = [r.id for r in res]
-        # print(res, a_ids)
-        return sorted(res) == sorted(a_ids)
+        corr_answers = await QuestionDb(self.session).find_correct_answers(
+            question_id
+        )
+        if not corr_answers:
+            return None
+        is_correct = sorted([r.id for r in corr_answers]) == sorted(
+            user_ans_ids
+        )
+        return IsCorrectAnsResponse(
+            correct=is_correct,
+            answers=[
+                AnswerInResponse(id=ans.id, text=ans.text, correct=ans.correct)
+                for ans in corr_answers
+            ],
+        )
 
     async def get_question_by_id(self, id_: int) -> QuestionDto | None:
         return await QuestionDb(self.session).get_question_by_id(id_)

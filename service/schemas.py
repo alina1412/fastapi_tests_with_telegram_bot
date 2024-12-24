@@ -200,6 +200,7 @@ class AnswerInResponse(BaseModel):
 
 class IsCorrectAnsResponse(BaseModel):
     correct: bool
+    answers: List[AnswerInResponse]
 
 
 class ScoreResponse(BaseModel):

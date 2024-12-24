@@ -48,21 +48,19 @@ class TgWorkQueue:
         quiz_manager = CallHandlersQuizGame()
         await quiz_manager.register_player_if_new(message.chat_id)
         await self.send_reply(message.chat_id, "ok")
-        await self.next_round(message)
+        await self.next_round(message.chat_id)
 
     async def process_command_score(self, message: MessageInTextDto):
         quiz_manager = CallHandlersQuizGame()
         score_text = await quiz_manager.get_score_of_player(message.chat_id)
         await self.send_reply(message.chat_id, score_text)
 
-    async def next_round(self, message):
+    async def next_round(self, chat_id: int):
         quiz_manager = CallHandlersQuizGame()
-        next_question = await quiz_manager.next_question_with_ans_opts(
-            message.chat_id
-        )
+        next_question = await quiz_manager.next_question_with_ans_opts(chat_id)
         quiz_out = await quiz_manager.transform_to_text_and_btns(next_question)
         await self.send_reply_keyboard(
-            chat_id=message.chat_id,
+            chat_id=chat_id,
             text=quiz_out.question,
             buttons=quiz_out.buttons,
         )
@@ -77,14 +75,24 @@ class TgWorkQueue:
             iscorrect = await quiz_manager.check_round_answer(
                 question_id, ans=[answer]
             )
-            await self.send_reply(
-                message.chat_id, f"correct: {iscorrect.correct}"
+            text_reply_ans = (
+                "correct shall be: "
+                + "\n".join(
+                    [
+                        ans.text
+                        for ans in iscorrect.answers
+                        if ans.correct is True
+                    ]
+                )
+                if not iscorrect.correct
+                else f"correct: {iscorrect.correct}"
             )
+            await self.send_reply(message.chat_id, text_reply_ans)
             await quiz_manager.edit_score_of_player(message.chat_id)
             await quiz_manager.mark_question_answered(
                 question_id, message.chat_id
             )
-            await self.next_round(message)
+            await self.next_round(message.chat_id)
 
     async def send_test_keyboard(self, chat_id):
         buttons = [
@@ -103,7 +111,9 @@ class TgWorkQueue:
             chat_id=chat_id, text=text, buttons=buttons
         )
 
-    async def send_reply_keyboard(self, chat_id, text, buttons):
+    async def send_reply_keyboard(
+        self, chat_id: int, text: str, buttons: list[list]
+    ):
         keyboard = json.dumps({"inline_keyboard": buttons})
         data = {"chat_id": chat_id, "text": text, "reply_markup": keyboard}
         """keyboard = json.dumps({"keyboard": buttons, 
@@ -111,7 +121,7 @@ class TgWorkQueue:
         data = {"chat_id": chat_id, "text": text, "reply_markup": keyboard}"""
         return await self.send_tg_message(data)
 
-    async def send_reply(self, chat_id, text):
+    async def send_reply(self, chat_id: int, text: str):
         data = {
             "chat_id": chat_id,
             "text": text,

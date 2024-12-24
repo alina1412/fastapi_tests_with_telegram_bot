@@ -147,6 +147,7 @@ async def add_answer(
 
 @api_router.post(
     "/submit-answer",
+    response_model=IsCorrectAnsResponse,
     responses={
         status.HTTP_400_BAD_REQUEST: {"description": "Bad request"},
         status.HTTP_422_UNPROCESSABLE_ENTITY: {"description": "Bad request"},
@@ -157,12 +158,11 @@ async def submit_answer(
     session: AsyncSession = Depends(get_session),
 ):
     """Request for compare_correct_answer"""
-    params = dict(params)
     q_manager = QuestionsManager(session)
-    res = await q_manager.compare_correct_answers(params)
-    if res is None:
+    is_corr_ans = await q_manager.compare_correct_answers(params)
+    if is_corr_ans is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Not found")
-    return IsCorrectAnsResponse(correct=res)
+    return is_corr_ans
 
 
 @api_router.delete(
