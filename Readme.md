@@ -1,12 +1,16 @@
 **About**\
-app FastApi (in progress)\
+FastApi service for answering quizzes (tests) with integration to telegram: answering to bot in a private chat. \
+app  (in progress)\.
 project for handling with tests (quiz):\
--handlers for adding questions and answers (it can be several correct answers for one question)\
--handlers for getting info of tests (quiz)\
--handler for checking answer with correct answers
+-handlers for adding questions and answers (it can be several correct answers for one question, but for telegram it would be only one button)\
+-admin handlers for getting info of tests (quiz)\
+-handler for checking answer with correct answers\
+-handler to see score of a player (with particular telegram chat id)
+
+![](https://github.com/alina1412/fastapi_tests/blob/main/extra_data/bot_gif.gif)
 
 **Stack**\
-FastApi, sqlalchemy, docker, postgres, poetry, pytest
+FastApi, sqlalchemy, postgres, alembic, docker, poetry, pytest, telegram api
 
 
 **Installation**
