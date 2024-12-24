@@ -1,62 +1,104 @@
 import sqlalchemy as sa
+from sqlalchemy.dialects.postgresql import insert
 
 # from sqlalchemy import select, update, or_, delete
-from sqlalchemy.dialects.postgresql import insert
-from sqlalchemy.orm import joinedload, lazyload, load_only
+from sqlalchemy.exc import IntegrityError
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import joinedload  # , lazyload, load_only
+from sqlalchemy.sql.expression import false, true
 
-from service.db_setup.models import Answer, Question, User
+from service.config import logger
+from service.db_setup.models import (
+    Answer,
+    Player,
+    Question,
+    Rounds,
+    TgUpdate,
+    User,
+)
+from service.db_setup.schemas import AnswerDto, QuestionDto
 from service.schemas import QuestionListRequest
 
 
 class QuestionDb:
     session = None
 
-    def __init__(self, session) -> None:
+    def __init__(self, session: AsyncSession) -> None:
         self.session = session
 
-    async def add_question(self, vals):
-        q = insert(Question).values(**vals).on_conflict_do_nothing()
-        result = await self.session.execute(q)
+    async def add_question(self, vals) -> int | None:
+        query = insert(Question).values(**vals).on_conflict_do_nothing()
+        result = await self.session.execute(query)
         if result.rowcount:
+            logger.info("added %s", result.returned_defaults[0])
             return result.returned_defaults[0]  # id
         return None
 
-    async def remove_question(self, id_):
-        stmt = sa.delete(Question).where(*(Question.id == id_,))
-        result = await self.session.execute(stmt)
+    async def remove_question(self, id_: int) -> int:
+        query = sa.delete(Question).where(*(Question.id == id_,))
+        result = await self.session.execute(query)
         return result.rowcount
 
-    async def edit_question_by_id(self, id_: int, vals: dict):
+    async def edit_question_by_id(
+        self, id_: int, vals: dict
+    ) -> QuestionDto | None:
         vals = {k: v for k, v in vals.items() if v is not None}
         if not vals:
             return None
-        stmt = (
+        query = (
             sa.update(Question)
             .where(Question.id == id_)
             .values(**vals)
-            .returning(Question.id)
+            .returning(Question)
         )
-        result = list(await self.session.execute(stmt))
-        return result
-
-    async def find_all_answers(self, q_id):
-        pass
-
-    async def find_correct_answers(self, q_id):
-        q = sa.select(Answer).where(
-            (Answer.question_id == q_id) & (Answer.correct == True)
+        elem = (await self.session.execute(query)).scalar_one_or_none()
+        return (
+            QuestionDto(
+                id=elem.id,
+                text=elem.text,
+                active=elem.active,
+                answers=[],
+                updated_dt=elem.updated_dt,
+            )
+            if elem
+            else None
         )
-        result = await self.session.execute(q)
-        res = result.scalars().all()
-        return res
 
-    async def get_question_by_id(self, id_):
-        q = sa.select(Question).where(Question.id == id_)
-        result = await self.session.execute(q)
+    async def find_correct_answers(self, question_id: int) -> list[AnswerDto]:
+        query = sa.select(Answer).where(
+            (Answer.question_id == question_id) & (Answer.correct == True)
+        )
+        result = await self.session.execute(query)
         res = result.scalars().all()
-        return res
+        return [
+            AnswerDto(
+                id=elem.id,
+                text=elem.text,
+                correct=elem.correct,
+                question_id=elem.question_id,
+            )
+            for elem in res
+        ]
 
-    async def get_questions(self, data: QuestionListRequest):
+    async def get_question_by_id(self, id_: int) -> QuestionDto | None:
+        query = sa.select(Question).where(Question.id == id_)
+        result = await self.session.execute(query)
+        res = result.scalars().first()
+        return (
+            QuestionDto(
+                id=res.id,
+                text=res.text,
+                active=res.active,
+                answers=[],
+                updated_dt=res.updated_dt,
+            )
+            if res
+            else None
+        )
+
+    async def get_questions(
+        self, data: QuestionListRequest
+    ) -> list[QuestionDto]:
         data = data.model_dump()
         orders = {
             "id": Question.id.desc(),
@@ -65,7 +107,7 @@ class QuestionDb:
         }
         order = orders[data["order"]] if data["order"] in orders else None
 
-        q = (
+        query = (
             sa.select(Question)
             .where(Question.active == data["active"])
             .order_by(order)
@@ -73,16 +115,27 @@ class QuestionDb:
             .offset(data["offset"])
         )
         if data["text"]:
-            q = q.where(Question.text.ilike(f"%{data['text']}%"))
-        result = await self.session.execute(q)
+            query = query.where(Question.text.ilike(f"%{data['text']}%"))
+        result = await self.session.execute(query)
         res = result.scalars().all()
-        return res
+        return [
+            QuestionDto(
+                id=elem.id,
+                text=elem.text,
+                active=elem.active,
+                answers=[],
+                updated_dt=elem.updated_dt,
+            )
+            for elem in res
+        ]
 
-    async def get_questions_with_answers(self, data: QuestionListRequest):
+    async def get_questions_with_answers(
+        self, data: QuestionListRequest
+    ) -> list[QuestionDto]:
         data = data.model_dump()
         order = Question.id.desc() if data["order"] == "id" else None
 
-        q = (
+        query = (
             sa.select(Question, Answer)
             .where(Question.active == data["active"])
             .order_by(order)
@@ -90,57 +143,100 @@ class QuestionDb:
             .offset(data["offset"])
         )
         if data["text"]:
-            q = q.where(Question.text.ilike(f"%{data['text']}%"))
+            query = query.where(Question.text.ilike(f"%{data['text']}%"))
+        if data.get("question_id"):
+            query = query.where(Question.id == data["question_id"])
 
-        q = q.join(Answer, Question.id == Answer.question_id)
-        # q = q.options(
-        #         joinedload(Question.answers).options(
-        #             load_only(
-        #                 Answer.id,
-        #                 Answer.text,
-        #                 Answer.correct,
-        #             )
-        #         ),
-        #         load_only(
-        #             Question.id,
-        #             Question.text,
-        #             Question.active,
-        #         ),)
-        result = await self.session.execute(q)
-        # result = result.scalars()
-        # result = result.scalars().all()
-        return result
+        query = query.options(joinedload(Question.answers)).where(
+            Question.id == Answer.question_id
+        )
+        result = await self.session.execute(query)
+        result = result.scalars().unique()
+        return [
+            QuestionDto(
+                id=question.id,
+                text=question.text,
+                active=question.active,
+                answers=[
+                    AnswerDto(
+                        id=res.id,
+                        text=res.text,
+                        correct=res.correct,
+                        question_id=res.question_id,
+                    )
+                    for res in question.answers
+                ],
+                updated_dt=question.updated_dt,
+            )
+            for question in result
+        ]
 
 
 class AnswerDb:
     session = None
 
-    def __init__(self, session) -> None:
+    def __init__(self, session: AsyncSession) -> None:
         self.session = session
 
-    async def add_answer(self, vals):
-        q = insert(Answer).values(**vals)  # .on_conflict_do_nothing()
-        result = await self.session.execute(q)
+    async def add_answer(self, vals) -> int | None:
+        query = insert(Answer).values(**vals)  # .on_conflict_do_nothing()
+        result = await self.session.execute(query)
         if result.rowcount and result.returned_defaults:
             return result.returned_defaults[0]  # id
         return None
 
-    async def remove_answer(self, id_):
-        stmt = sa.delete(Answer).where(Answer.id == id_)
-        result = await self.session.execute(stmt)
+    async def remove_answer(self, id_: int) -> int:
+        query = sa.delete(Answer).where(Answer.id == id_)
+        result = await self.session.execute(query)
         return result.rowcount
 
-    async def get_answer_by_id(self, ans_id):
-        q = sa.select(Answer).where(Answer.id == ans_id)
-        result = await self.session.execute(q)
-        res = result.scalars().all()
-        return res
+    async def get_answer_by_id(self, ans_id: int) -> AnswerDto | None:
+        query = sa.select(Answer).where(Answer.id == ans_id)
+        result = await self.session.execute(query)
+        res = result.scalars().first()
+        return (
+            AnswerDto(
+                id=res.id,
+                text=res.text,
+                correct=res.correct,
+                question_id=res.question_id,
+            )
+            if res
+            else None
+        )
 
-    async def get_answers_for_question(self, q_id):
-        q = sa.select(Answer).where(Answer.question_id == q_id)
-        result = await self.session.execute(q)
+    async def get_answers_for_question(
+        self, question_id: int
+    ) -> list[AnswerDto]:
+        query = sa.select(Answer).where(Answer.question_id == question_id)
+        result = await self.session.execute(query)
         res = result.scalars().all()
-        return res
+        return [
+            AnswerDto(
+                id=elem.id,
+                text=elem.text,
+                correct=elem.correct,
+                question_id=elem.question_id,
+            )
+            for elem in res
+        ]
+
+
+class TgDb:
+    def __init__(self, session: AsyncSession) -> None:
+        self.session = session
+
+    async def update_tg_id(self, id_: int):
+        query = (
+            sa.update(TgUpdate)
+            .where(TgUpdate.id == sa.select(TgUpdate.id).limit(1))
+            .values(**{"id": id_})
+        )
+        await self.session.execute(query)
+
+    async def get_last_tg_id(self):
+        query = sa.select(TgUpdate.id).limit(1)
+        return (await self.session.execute(query)).scalar_one_or_none()
 
 
 class UserDb:
@@ -151,17 +247,17 @@ class UserDb:
 
     async def select_all(self, session):
         conds = (1 == 1,)
-        q = sa.select(self.model).where(*conds)
-        result = await session.execute(q)
+        query = sa.select(self.model).where(*conds)
+        result = await session.execute(query)
         res = result.scalars().all()
         data = [{"username": u.username, "id": u.id} for u in res]
         return data
 
     async def put(self, session, username, password):
         vals = {"username": username, "password": password}
-        q = insert(self.model).values(**vals).on_conflict_do_nothing()
+        query = insert(self.model).values(**vals).on_conflict_do_nothing()
 
-        result = await session.execute(q)
+        result = await session.execute(query)
         if result.rowcount:
             return result.returned_defaults[0]  # id
         return None
@@ -178,14 +274,93 @@ class UserDb:
         # {self.model.active.key: self.model.active or data["active"]}
         if not conds:
             conds = (1 == 1,)  # conds = (User.id == 103,)
-        stmt = (
-            sa.update(self.model).where(*conds).values(**vals).returning(self.model.id)
+        query = (
+            sa.update(self.model)
+            .where(*conds)
+            .values(**vals)
+            .returning(self.model.id)
         )
-        result = list(await session.execute(stmt))
+        result = list(await session.execute(query))
         return result
 
     async def delete(self, session, id_):
-        stmt = sa.delete(self.model).where(*(User.id == id_,))
-        result = await session.execute(stmt)
+        query = sa.delete(self.model).where(*(User.id == id_,))
+        result = await session.execute(query)
         # result.rowcount
         return
+
+
+class GameDb:
+    session = None
+
+    def __init__(self, session: AsyncSession) -> None:
+        self.session = session
+
+    async def create_new_rounds(self, user_tg_id: int, amount: int = 5) -> None:
+        """To Round model -> question_id, user_tg_id"""
+        sub_query_choice = (
+            sa.select(Question.id, sa.cast(user_tg_id, sa.Integer))
+            .order_by(sa.func.random())
+            .limit(amount)
+        )
+        query_insert_rounds = (
+            sa.insert(Rounds)
+            .from_select(["question_id", "player_id"], sub_query_choice)
+            .returning(Rounds.id)
+        )
+        try:
+            result = await self.session.execute(query_insert_rounds)
+        except IntegrityError as err:
+            logger.error("error ", exc_info=err)
+            raise err
+
+    async def delete_old_rounds(self, user_tg_id: int) -> None:
+        query = sa.delete(Rounds).where(
+            *(Rounds.asked == true(), Rounds.player_id == user_tg_id)
+        )
+        await self.session.execute(query)
+
+    async def raise_score(self, user_tg_id: int) -> int | None:
+        query = (
+            sa.update(Player)
+            .where(Player.tg_id == user_tg_id)
+            .values(**{"score": Player.__table__.c.score + 1})
+            .returning(Player.score)
+        )
+        return (await self.session.execute(query)).scalar_one_or_none()
+
+    async def get_next_question_id(self, user_tg_id: int) -> int | None:
+        query = sa.select(Rounds.question_id).where(
+            Rounds.player_id == user_tg_id, Rounds.asked == false()
+        )
+        result = await self.session.execute(query)
+        return result.scalars().first()
+
+    async def mark_question_answered(
+        self, question_id: int, user_tg_id: int
+    ) -> None:
+        query = (
+            sa.update(Rounds)
+            .where(
+                Rounds.player_id == user_tg_id,
+                Rounds.question_id == question_id,
+            )
+            .values(asked=true())
+        )
+        await self.session.execute(query)
+
+    async def create_player(self, user_tg_id: int) -> int | None:
+        query = (
+            insert(Player)
+            .values(**{"tg_id": user_tg_id})
+            .on_conflict_do_nothing()
+        )
+        result = await self.session.execute(query)
+        if result.rowcount:
+            return result.returned_defaults[0]  # id
+        return None
+
+    async def get_score_of_player(self, user_tg_id: int) -> int | None:
+        query = sa.select(Player.score).where(Player.tg_id == user_tg_id)
+        result = await self.session.execute(query)
+        return result.scalars().first()

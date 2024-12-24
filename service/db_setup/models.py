@@ -1,28 +1,24 @@
 from datetime import datetime
-from typing import List
 
 import sqlalchemy as sa
 from sqlalchemy import (
-    TIMESTAMP,
     Boolean,
     Column,
-    DateTime,
     ForeignKey,
     Integer,
     String,
-    Text,
+    text as sa_text,  # Text, DateTime, TIMESTAMP
 )
-from sqlalchemy import text as sa_text
 from sqlalchemy.orm import (
     DeclarativeBase,
     Mapped,
     MappedAsDataclass,
-    declarative_base,
+    # declarative_base,
     mapped_column,
     relationship,
 )
-from sqlalchemy.sql import func
 
+# from sqlalchemy.sql import func
 from service.config import utcnow
 
 
@@ -31,7 +27,7 @@ class Base(DeclarativeBase):
 
 
 class Base(MappedAsDataclass, DeclarativeBase):
-    """subclasses will be converted to dataclasses"""
+    """Subclasses will be converted to dataclasses"""
 
     pass
 
@@ -42,7 +38,8 @@ class Question(Base):
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     text: Mapped[str] = mapped_column(String(50), nullable=True)
     active: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
-    answers = relationship("Answer", backref="questions")
+    # answers = relationship("Answer", backref="questions")
+    answers = relationship("Answer", back_populates="question")
     # answers: Mapped[List["Answer"]] = relationship()
     updated_dt: Mapped[datetime] = mapped_column(
         sa.DateTime(timezone=True),
@@ -62,6 +59,7 @@ class Answer(Base):
     question_id: Mapped[int] = mapped_column(
         ForeignKey("questions.id", ondelete="CASCADE")
     )
+    question = relationship("Question", back_populates="answers")
 
 
 class User(Base):
@@ -70,7 +68,34 @@ class User(Base):
     id = Column(Integer, primary_key=True)
     username = Column(String(255), unique=True, nullable=False)
     password = Column(String(255), nullable=False)
-    active = Column(Integer, nullable=False, default=1)
+    active = Column(Integer, nullable=False, server_default="1")
+
+
+class Player(Base):
+    __tablename__ = "players"
+
+    id = Column(Integer, primary_key=True)
+    tg_id = Column(Integer, unique=True, nullable=False)
+    score = Column(Integer, nullable=False, server_default="0")
+
+
+class Rounds(Base):
+    __tablename__ = "rounds"
+
+    id = Column(Integer, primary_key=True)
+    asked = Column(Boolean, server_default="False")
+    question_id: Mapped[int] = mapped_column(
+        ForeignKey("questions.id", ondelete="CASCADE")
+    )
+    player_id: Mapped[int] = mapped_column(
+        ForeignKey("players.tg_id", ondelete="CASCADE")
+    )
+
+
+class TgUpdate(Base):
+    __tablename__ = "tg_update"
+
+    id = Column(Integer, primary_key=True)
 
 
 # create_engine

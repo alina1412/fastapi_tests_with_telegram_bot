@@ -1,18 +1,17 @@
-import pytest
-import pytest_asyncio
+import warnings
 from typing import Any, AsyncGenerator
 
+import pytest
+import pytest_asyncio
 from fastapi.testclient import TestClient
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import sessionmaker
 
-import warnings
-
 warnings.filterwarnings("ignore", category=DeprecationWarning)
 
 
-from service.db_setup.db_settings import DBManager, get_session
 from service.__main__ import app
+from service.db_setup.db_settings import DBManager, get_session
 
 
 @pytest_asyncio.fixture(name="db", scope="function")

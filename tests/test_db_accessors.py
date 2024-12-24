@@ -1,15 +1,15 @@
-from fastapi import Depends
-import pytest_asyncio
 import asyncio
-import pytest
 import logging
+
+import pytest
+import pytest_asyncio
+from fastapi import Depends
 from pydantic import BaseModel
 
+from service.db_setup.models import Answer, Base, Question, User
 from service.db_watchers import AnswerDb, QuestionDb
 from service.schemas import QuestionListRequest
 from service.utils import QuestionsManager
-from service.db_setup.models import Answer, Question, User, Base
-
 
 pytest_plugins = ("pytest_asyncio",)
 logging.basicConfig(level=logging.DEBUG)
@@ -28,8 +28,12 @@ class InputData(BaseModel):
 async def test_db_add_remove_question(db):
     q_manager = QuestionDb(db)
 
-    data = InputData(active=1, limit=50, offset=0, order="updated_dt", text="question")
-    id_ = await q_manager.add_question(data.model_dump(include={"active", "text"}))
+    data = InputData(
+        active=1, limit=50, offset=0, order="updated_dt", text="question"
+    )
+    id_ = await q_manager.add_question(
+        data.model_dump(include={"active", "text"})
+    )
     print("-------")
     print(id_)
     print("-------")

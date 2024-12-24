@@ -1,7 +1,6 @@
 import pytest
 import requests
 
-
 add_questions_url = "http://localhost:8000/v1/add-question"
 
 add_answers_url = "http://localhost:8000/v1/add-answer"

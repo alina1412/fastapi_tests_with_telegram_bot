@@ -35,7 +35,9 @@ class DBManager:
 
     @property
     def session_maker(self):
-        return sessionmaker(self.engine, class_=AsyncSession, expire_on_commit=False)
+        return sessionmaker(
+            self.engine, class_=AsyncSession, expire_on_commit=False
+        )
 
 
 async def get_session() -> AsyncGenerator:

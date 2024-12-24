@@ -1,23 +1,18 @@
-import random
-from typing import Any, Dict, List, Optional, Union
+from typing import Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Request, status
-from fastapi.responses import JSONResponse
-from pydantic import parse_obj_as
-from sqlalchemy.ext.asyncio import AsyncSession
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.exc import IntegrityError
+from sqlalchemy.ext.asyncio import AsyncSession
 
-from service.config import key
+from service.config import logger
 from service.db_setup.db_settings import get_session
-from service.db_setup.models import Question, User
-from service.db_watchers import UserDb
 from service.errors import AnswerNotAddedError
 from service.schemas import (
     AnswerAddRequest,
     AnswerAddResponse,
-    AnswerRequest,
     AnswerSubmitRequest,
     DeleteResponse,
+    IsCorrectAnsResponse,
     QuestionAddRequest,
     QuestionAddResponse,
     QuestionEditRequest,
@@ -44,7 +39,7 @@ api_router = APIRouter(
 async def show_quiz(
     data: QuestionListRequest, session: AsyncSession = Depends(get_session)
 ):  # -> list[QuestionResponse]
-    """show quiz-test page"""
+    """Show quiz-test page"""
     q_manager = QuestionsManager(session)
     questions = await q_manager.get_questions_with_answers(data)
     # return QuizResponse.parse_obj(questions)
@@ -62,7 +57,7 @@ async def show_quiz(
 async def get_questions(
     data: QuestionListRequest, session: AsyncSession = Depends(get_session)
 ) -> list[QuestionResponse]:
-    """get_questions"""
+    """Get_questions"""
     q_manager = QuestionsManager(session)
     questions = await q_manager.get_questions(data)
     return questions if questions else []
@@ -80,7 +75,7 @@ async def get_questions(
 async def add_question(
     data: QuestionAddRequest, session: AsyncSession = Depends(get_session)
 ):
-    """request for add-question"""
+    """Request for add-question"""
     q_manager = QuestionsManager(session)
     id_ = await q_manager.add_question(data)
     if id_:
@@ -96,15 +91,13 @@ async def add_question(
     },
 )
 async def edit_question(
-    # id: int,
     params=Depends(QuestionEditRequest),
     session: AsyncSession = Depends(get_session),
 ):
-    """request for edit_question"""
+    """Request for edit_question"""
     q_manager = QuestionsManager(session)
-    d = params.model_dump()
-    # d['id'] = id
-    res = await q_manager.edit_question_by_id(d)
+    edit_question_data = params.model_dump()
+    res = await q_manager.edit_question_by_id(edit_question_data)
     return {"edited": res}
 
 
@@ -120,7 +113,7 @@ async def delete_question(
     id: int,
     session: AsyncSession = Depends(get_session),
 ):
-    """request for delete_question"""
+    """Request for delete_question"""
     q_manager = QuestionsManager(session)
     res = await q_manager.remove_question(id)
     return {"deleted_rows": res}
@@ -138,20 +131,23 @@ async def delete_question(
 async def add_answer(
     data: AnswerAddRequest, session: AsyncSession = Depends(get_session)
 ):
-    """request for add-answer"""
+    """Request for add-answer"""
     a_manager = AnswersManager(session)
     try:
         id_ = await a_manager.add_answer(data)
     except IntegrityError as err:
+        text_err = f"answer not added: {AnswerNotAddedError(err).add_detail}"
+        logger.error(text_err)
         raise HTTPException(
             status.HTTP_400_BAD_REQUEST,
-            f"answer not added: {AnswerNotAddedError(err).add_detail}",
-        )
+            text_err,
+        ) from err
     return {"created": id_}
 
 
 @api_router.post(
     "/submit-answer",
+    response_model=IsCorrectAnsResponse,
     responses={
         status.HTTP_400_BAD_REQUEST: {"description": "Bad request"},
         status.HTTP_422_UNPROCESSABLE_ENTITY: {"description": "Bad request"},
@@ -161,13 +157,12 @@ async def submit_answer(
     params: AnswerSubmitRequest = Depends(),
     session: AsyncSession = Depends(get_session),
 ):
-    """request for compare_correct_answer"""
-    params = dict(params)
+    """Request for compare_correct_answer"""
     q_manager = QuestionsManager(session)
-    res = await q_manager.compare_correct_answers(params)
-    if res is None:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, f"Not found")
-    return {"correct": res}
+    is_corr_ans = await q_manager.compare_correct_answers(params)
+    if is_corr_ans is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Not found")
+    return is_corr_ans
 
 
 @api_router.delete(
@@ -182,40 +177,7 @@ async def delete_answer(
     id: int,
     session: AsyncSession = Depends(get_session),
 ):
-    """request for delete_answer"""
+    """Request for delete_answer"""
     a_manager = AnswersManager(session)
     res = await a_manager.remove_answer(id)
     return {"deleted_rows": res}
-
-
-@api_router.put(
-    "/edit-user",
-    responses={
-        status.HTTP_400_BAD_REQUEST: {"description": "Bad request"},
-        status.HTTP_422_UNPROCESSABLE_ENTITY: {"description": "Bad request"},
-    },
-)
-async def user_handler(
-    q_id=None, new_data=None, session: AsyncSession = Depends(get_session)
-):
-    """example with postgres sqlalchemy"""
-    add_data = new_data if new_data else str(random.random())
-    print(add_data)
-    db = UserDb(User)
-    id_ = await db.put(session, add_data, "bbb")
-
-    id_ = 0
-
-    users = await db.select_all(session)
-    print(users)
-
-    res = await db.update(session)
-    id_ = res[0][0] if res and res[0] else None
-    try:
-        id_ = 3
-        await db.delete(session, id_)
-    except Exception as exc:
-        id_ = None
-        print(exc)
-        raise HTTPException(status.HTTP_400_BAD_REQUEST, f"No") from exc
-    return {"user_id": id_}

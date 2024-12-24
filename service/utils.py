@@ -1,20 +1,18 @@
-import logging
-
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from service.config import logger
+from service.db_setup.schemas import AnswerDto, QuestionDto
 from service.db_watchers import AnswerDb, QuestionDb
 from service.schemas import (
     AnswerInResponse,
     AnswerRequest,
+    AnswerSubmitRequest,
+    IsCorrectAnsResponse,
     QuestionEditRequest,
     QuestionListRequest,
-    QuestionResponse,
     QuestionResponseInQuiz,
 )
-
-
-logger = logging.getLogger(__name__)
 
 
 class QuestionsManager:
@@ -30,65 +28,68 @@ class QuestionsManager:
     async def remove_question(self, id_: int):
         return await QuestionDb(self.session).remove_question(id_)
 
-    async def edit_question_by_id(self, vals: dict):
+    async def edit_question_by_id(self, vals: dict) -> int:
         id_ = vals.pop("id")
         res = await QuestionDb(self.session).edit_question_by_id(id_, vals)
-        return res[0].id if res else None
+        return res.id if res else None
 
-    async def find_all_answers(self, q_id: int):
-        pass
+    async def find_correct_answers(self, question_id: int) -> list[AnswerDto]:
+        return await QuestionDb(self.session).find_correct_answers(question_id)
 
-    async def find_correct_answers(self, q_id: int):
-        res = await QuestionDb(self.session).find_correct_answers(q_id)
-        resp = [u.__dict__ for u in res] if res else None
-        return resp
-
-    async def compare_correct_answers(self, params: dict):
-        q_id, a_ids = params["question_id"], params["answer_ids"]
-        if not a_ids:
-            return False
-        res = await QuestionDb(self.session).find_correct_answers(q_id)
-        if not res:
+    async def compare_correct_answers(
+        self, params: AnswerSubmitRequest
+    ) -> IsCorrectAnsResponse | None:
+        question_id, user_ans_ids = params.question_id, params.answer_ids
+        if not user_ans_ids:
             return None
-        res = [r.id for r in res]
-        # print(res, a_ids)
-        return sorted(res) == sorted(a_ids)
+        corr_answers = await QuestionDb(self.session).find_correct_answers(
+            question_id
+        )
+        if not corr_answers:
+            return None
+        is_correct = sorted([r.id for r in corr_answers]) == sorted(
+            user_ans_ids
+        )
+        return IsCorrectAnsResponse(
+            correct=is_correct,
+            answers=[
+                AnswerInResponse(id=ans.id, text=ans.text, correct=ans.correct)
+                for ans in corr_answers
+            ],
+        )
 
-    async def get_question_by_id(self, id_: int):
-        res = await QuestionDb(self.session).get_question_by_id(id_)
-        return res[0].id if res else None
+    async def get_question_by_id(self, id_: int) -> QuestionDto | None:
+        return await QuestionDb(self.session).get_question_by_id(id_)
 
-    async def get_questions(self, data: QuestionListRequest):
-        res = await QuestionDb(self.session).get_questions(data)
-        # resp = [{"text": u.text, "id": u.id, "active": u.active} for u in res]
-        resp = [u.__dict__ for u in res]
-        return resp
+    async def get_questions(
+        self, data: QuestionListRequest
+    ) -> list[QuestionDto]:
+        return await QuestionDb(self.session).get_questions(data)
 
-    def convert_quiz_response(self, res):
+    def convert_quiz_response(self, res) -> dict:
         responses = {}
-        for question, *answers in res:
+        for question in res:
             if question.id not in responses:
                 responses[question.id] = QuestionResponseInQuiz(
                     text=question.text,
                     id=question.id,
                     active=question.active,
-                    answers=[],
-                )
-
-            for answer in answers:
-                if answer:
-                    responses[question.id].answers.append(
+                    answers=[
                         AnswerInResponse(
-                            id=answer.id, text=answer.text, correct=answer.correct
+                            id=answer.id,
+                            text=answer.text,
+                            correct=answer.correct,
                         )
-                    )
+                        for answer in question.answers
+                    ],
+                )
         return responses
 
-    async def get_questions_with_answers(self, data: QuestionListRequest):
+    async def get_questions_with_answers(
+        self, data: QuestionListRequest
+    ) -> dict:
         res = await QuestionDb(self.session).get_questions_with_answers(data)
-        # resp = [{"text": u.text, "id": u.id, "active": u.active} for u in res]
         responses = self.convert_quiz_response(res)
-        # responses = [u.__dict__ for u in res]
         return responses
 
 
@@ -103,19 +104,28 @@ class AnswersManager:
         try:
             res = await AnswerDb(self.session).add_answer(vals)
         except IntegrityError as err:
-            logger.error(err)
+            logger.error("error ", exc_info=err)
             raise err
         return res  # res[0].id if res else None
 
     async def remove_answer(self, id_: int):
         return await AnswerDb(self.session).remove_answer(id_)
 
-    async def get_answer_by_id(self, ans_id: int):
-        res = await AnswerDb(self.session).get_answer_by_id(ans_id)
-        return res[0].id if res else None
+    async def get_answer_by_id(self, ans_id: int) -> AnswerDto | None:
+        return await AnswerDb(self.session).get_answer_by_id(ans_id)
 
-    async def get_answers_for_question(self, q_id: int):
-        res = await AnswerDb(self.session).get_answer_by_id(q_id)
-        # data = [{"username": u.username, "id": u.id} for u in res]
-        resp = [u.__dict__ for u in res]
-        return resp
+    async def get_answers_for_question(
+        self, question_id: int
+    ) -> list[AnswerDto]:
+        return await AnswerDb(self.session).get_answers_for_question(
+            question_id
+        )
+
+
+"""
+class GameManager:
+    session = None
+
+    def __init__(self, session: AsyncSession) -> None:
+        self.session = session
+"""
