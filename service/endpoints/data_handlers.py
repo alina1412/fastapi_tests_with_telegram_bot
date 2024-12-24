@@ -1,18 +1,15 @@
-import random
 from typing import Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Request, status
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from service.config import logger
 from service.db_setup.db_settings import get_session
-from service.db_watchers import UserDb
 from service.errors import AnswerNotAddedError
 from service.schemas import (
     AnswerAddRequest,
     AnswerAddResponse,
-    AnswerRequest,
     AnswerSubmitRequest,
     DeleteResponse,
     IsCorrectAnsResponse,
@@ -94,15 +91,13 @@ async def add_question(
     },
 )
 async def edit_question(
-    # id: int,
     params=Depends(QuestionEditRequest),
     session: AsyncSession = Depends(get_session),
 ):
     """Request for edit_question"""
     q_manager = QuestionsManager(session)
-    d = params.model_dump()
-    # d['id'] = id
-    res = await q_manager.edit_question_by_id(d)
+    edit_question_data = params.model_dump()
+    res = await q_manager.edit_question_by_id(edit_question_data)
     return {"edited": res}
 
 

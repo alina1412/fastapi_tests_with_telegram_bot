@@ -5,8 +5,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from service.config import logger
 from service.db_setup.db_settings import get_session
-from service.db_watchers import UserDb
 from service.db_setup.models import User
+from service.db_watchers import UserDb
 
 api_router = APIRouter(
     prefix="/v1",

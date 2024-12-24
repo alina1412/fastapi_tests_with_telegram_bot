@@ -1,28 +1,24 @@
 from datetime import datetime
-from typing import List
 
 import sqlalchemy as sa
 from sqlalchemy import (
-    TIMESTAMP,
     Boolean,
     Column,
-    DateTime,
     ForeignKey,
     Integer,
     String,
-    Text,
-    text as sa_text,
+    text as sa_text,  # Text, DateTime, TIMESTAMP
 )
 from sqlalchemy.orm import (
     DeclarativeBase,
     Mapped,
     MappedAsDataclass,
-    declarative_base,
+    # declarative_base,
     mapped_column,
     relationship,
 )
-# from sqlalchemy.sql import func
 
+# from sqlalchemy.sql import func
 from service.config import utcnow
 
 
@@ -31,7 +27,7 @@ class Base(DeclarativeBase):
 
 
 class Base(MappedAsDataclass, DeclarativeBase):
-    """subclasses will be converted to dataclasses"""
+    """Subclasses will be converted to dataclasses"""
 
     pass
 

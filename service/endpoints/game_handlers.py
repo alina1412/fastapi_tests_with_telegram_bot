@@ -1,10 +1,10 @@
-from fastapi import APIRouter, Depends, status, HTTPException
-from sqlalchemy.ext.asyncio import AsyncSession
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.exc import IntegrityError
+from sqlalchemy.ext.asyncio import AsyncSession
 
-from service.db_watchers import GameDb
 from service.config import logger
 from service.db_setup.db_settings import get_session
+from service.db_watchers import GameDb
 from service.schemas import (
     QuestionGetOneRequest,
     QuestionIdResponse,

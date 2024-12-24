@@ -2,8 +2,8 @@ import uvicorn
 from fastapi import FastAPI
 
 from service.endpoints.data_handlers import api_router as data_routes
-from service.endpoints.tg_handlers import api_router as tg_routes
 from service.endpoints.game_handlers import api_router as game_routes
+from service.endpoints.tg_handlers import api_router as tg_routes
 
 app = FastAPI()
 

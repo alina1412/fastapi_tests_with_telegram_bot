@@ -1,4 +1,4 @@
-import asyncio
+# import asyncio
 import json
 
 import aiohttp
@@ -11,7 +11,7 @@ from service.schemas import (
     ScoreResponse,
 )
 from telegram_service.schemas_tg import QuizOutDto
-from telegram_service.tg_config import logger, URL_START
+from telegram_service.tg_config import URL_START, logger
 
 
 class CallHandlersBase:
@@ -119,12 +119,12 @@ class CallHandlersQuizGame(CallHandlersBase):
         res = await self.load_json_post_handler(url, data)
         if not res:
             logger.info("not next question_id")
-            return
+            return None
         question_id = res["question_id"]
         data = json.dumps(res)
         questions_dict = await CallHandlersQuizBulk().load_quiz(data)
         if not questions_dict:
-            return
+            return None
         return questions_dict.root[question_id]
 
     async def transform_to_text_and_btns(
@@ -160,7 +160,7 @@ class CallHandlersQuizGame(CallHandlersBase):
         return "success" in res_dict
 
     async def mark_question_answered(self, question_id: int, tg_id: int):
-        url = URL_START + f"/v1/mark-answered"
+        url = URL_START + "/v1/mark-answered"
         res_dict = await self.load_json_put_handler(
             url, json.dumps({"tg_id": tg_id, "question_id": question_id})
         )

@@ -3,20 +3,18 @@ import os
 
 import aiohttp
 
-
 from telegram_service.process import (
     CallHandlersQuizGame,
     CallHandlersTg,
-    get_keyboard,
 )
-from telegram_service.tg_config import logger
 from telegram_service.schemas_tg import MessageInCallbackDto, MessageInTextDto
+from telegram_service.tg_config import logger
 
 token = os.environ.get("TELEGRAM_BOT_API_TOKEN")
 assert token
 
 
-class TG_WORK_QUEUE:
+class TgWorkQueue:
     token = token
 
     async def process(self, message):
@@ -108,7 +106,8 @@ class TG_WORK_QUEUE:
     async def send_reply_keyboard(self, chat_id, text, buttons):
         keyboard = json.dumps({"inline_keyboard": buttons})
         data = {"chat_id": chat_id, "text": text, "reply_markup": keyboard}
-        """keyboard = json.dumps({"keyboard": buttons, "one_time_keyboard": True})
+        """keyboard = json.dumps({"keyboard": buttons, 
+        "one_time_keyboard": True})
         data = {"chat_id": chat_id, "text": text, "reply_markup": keyboard}"""
         return await self.send_tg_message(data)
 
@@ -134,7 +133,7 @@ class TG_WORK_QUEUE:
                 return resp
 
 
-class TG_PULL_QUEUE:
+class TgPullQueue:
     token = token
     offset = 0
 
@@ -147,7 +146,8 @@ class TG_PULL_QUEUE:
         params = {
             "offset": self.offset,
             "timeout": 30,
-            "allowed_updates": [],  # "message", "inline_query", "callback_query"
+            "allowed_updates": [],
+            # "message", "inline_query", "callback_query"
         }
 
         async with aiohttp.ClientSession() as session:
@@ -156,11 +156,12 @@ class TG_PULL_QUEUE:
             ) as resp:
                 json_resp = await resp.json()
                 logger.info(json.dumps(json_resp))
-                if json_resp["ok"]:
-                    messages = json_resp["result"]
-                    return messages
-                else:
-                    logger.error("json not ok")
+                if not json_resp["ok"]:
+                    logger.error(
+                        "json not ok %s", json.dumps(json_resp), exc_info=1
+                    )
+                messages = json_resp["result"]
+                return messages
 
     async def get_new_messages(self):
         last_id = await CallHandlersTg().get_last_tg_id()

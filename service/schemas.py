@@ -9,10 +9,6 @@ class UserInput(BaseModel):
     username: str
 
 
-# class AnswersList(BaseModel):
-# answers: List[int] = Field(default_factory=list, min_length=1)
-
-
 class QuestionOrderSchema(str, Enum):
     id = "id"
     active = "active"
@@ -93,9 +89,7 @@ class QuestionEditRequest(BaseModel):
 
 
 class QuestionResponse(BaseModel):
-    """
-    Schema for output.
-    """
+    """Schema for output."""
 
     id: int = Field(description="id of a question")
     text: str = Field(description="text")
@@ -121,9 +115,7 @@ class QuizListResponse(BaseModel):
 
 
 class AnswerRequest(BaseModel):
-    """
-    Schema for input.
-    """
+    """Schema for input."""
 
     id: Optional[int] = Field(description="id of an answer", default=None)
     text: str = Field(description="text", min_length=1, max_length=50)
@@ -142,9 +134,7 @@ class AnswerRequest(BaseModel):
 
 
 class AnswerAddRequest(BaseModel):
-    """
-    Schema for input.
-    """
+    """Schema for input."""
 
     text: str = Field(
         example="answer 1", description="text", min_length=1, max_length=50
@@ -169,9 +159,7 @@ class AnswerSubmitRequest(BaseModel):
 
 
 class AnswerResponse(BaseModel):
-    """
-    Schema for output.
-    """
+    """Schema for output."""
 
     id: int = Field(description="id of an answer")
     text: str = Field(description="text")

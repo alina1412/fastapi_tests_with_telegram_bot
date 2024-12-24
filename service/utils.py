@@ -2,16 +2,15 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from service.config import logger
+from service.db_setup.schemas import AnswerDto, QuestionDto
 from service.db_watchers import AnswerDb, QuestionDb
 from service.schemas import (
     AnswerInResponse,
     AnswerRequest,
     QuestionEditRequest,
     QuestionListRequest,
-    # QuestionResponse,
     QuestionResponseInQuiz,
 )
-from service.db_setup.schemas import AnswerDto, QuestionDto
 
 
 class QuestionsManager:
@@ -27,12 +26,12 @@ class QuestionsManager:
     async def remove_question(self, id_: int):
         return await QuestionDb(self.session).remove_question(id_)
 
-    async def edit_question_by_id(self, vals: dict):
+    async def edit_question_by_id(self, vals: dict) -> int:
         id_ = vals.pop("id")
         res = await QuestionDb(self.session).edit_question_by_id(id_, vals)
         return res.id if res else None
 
-    async def find_correct_answers(self, question_id: int):
+    async def find_correct_answers(self, question_id: int) -> list[AnswerDto]:
         return await QuestionDb(self.session).find_correct_answers(question_id)
 
     async def compare_correct_answers(self, params: dict):
@@ -46,13 +45,15 @@ class QuestionsManager:
         # print(res, a_ids)
         return sorted(res) == sorted(a_ids)
 
-    async def get_question_by_id(self, id_: int):
+    async def get_question_by_id(self, id_: int) -> QuestionDto | None:
         return await QuestionDb(self.session).get_question_by_id(id_)
 
-    async def get_questions(self, data: QuestionListRequest):
+    async def get_questions(
+        self, data: QuestionListRequest
+    ) -> list[QuestionDto]:
         return await QuestionDb(self.session).get_questions(data)
 
-    def convert_quiz_response(self, res):
+    def convert_quiz_response(self, res) -> dict:
         responses = {}
         for question in res:
             if question.id not in responses:
@@ -71,7 +72,9 @@ class QuestionsManager:
                 )
         return responses
 
-    async def get_questions_with_answers(self, data: QuestionListRequest):
+    async def get_questions_with_answers(
+        self, data: QuestionListRequest
+    ) -> dict:
         res = await QuestionDb(self.session).get_questions_with_answers(data)
         responses = self.convert_quiz_response(res)
         return responses
@@ -95,10 +98,12 @@ class AnswersManager:
     async def remove_answer(self, id_: int):
         return await AnswerDb(self.session).remove_answer(id_)
 
-    async def get_answer_by_id(self, ans_id: int):
+    async def get_answer_by_id(self, ans_id: int) -> AnswerDto | None:
         return await AnswerDb(self.session).get_answer_by_id(ans_id)
 
-    async def get_answers_for_question(self, question_id: int):
+    async def get_answers_for_question(
+        self, question_id: int
+    ) -> list[AnswerDto]:
         return await AnswerDb(self.session).get_answers_for_question(
             question_id
         )

@@ -1,23 +1,23 @@
 import sqlalchemy as sa
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.dialects.postgresql import insert
 
 # from sqlalchemy import select, update, or_, delete
 from sqlalchemy.exc import IntegrityError
-from sqlalchemy.dialects.postgresql import insert
-from sqlalchemy.sql.expression import false, true
+from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import joinedload  # , lazyload, load_only
+from sqlalchemy.sql.expression import false, true
 
 from service.config import logger
 from service.db_setup.models import (
     Answer,
-    Question,
-    User,
-    TgUpdate,
-    Rounds,
     Player,
+    Question,
+    Rounds,
+    TgUpdate,
+    User,
 )
-from service.schemas import QuestionListRequest
 from service.db_setup.schemas import AnswerDto, QuestionDto
+from service.schemas import QuestionListRequest
 
 
 class QuestionDb:
@@ -315,7 +315,10 @@ class GameDb:
             raise err
 
     async def delete_old_rounds(self, user_tg_id: int) -> None:
-        pass
+        query = sa.delete(Rounds).where(
+            *(Rounds.asked == true(), Rounds.player_id == user_tg_id)
+        )
+        await self.session.execute(query)
 
     async def raise_score(self, user_tg_id: int) -> int | None:
         query = (
