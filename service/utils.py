@@ -9,6 +9,7 @@ from service.schemas import (
     AnswerRequest,
     AnswerSubmitRequest,
     IsCorrectAnsResponse,
+    QuestionAddRequest,
     QuestionEditRequest,
     QuestionListRequest,
     QuestionResponseInQuiz,
@@ -21,9 +22,13 @@ class QuestionsManager:
     def __init__(self, session: AsyncSession) -> None:
         self.session = session
 
-    async def add_question(self, data: QuestionEditRequest):
+    async def add_question(self, data: QuestionAddRequest):
         vals = data.model_dump()
         return await QuestionDb(self.session).add_question(vals)
+
+    # async def edit_add_question(self, data: QuestionEditRequest):
+    #     vals = data.model_dump()
+    #     return await QuestionDb(self.session).add_question(vals)
 
     async def remove_question(self, id_: int):
         return await QuestionDb(self.session).remove_question(id_)

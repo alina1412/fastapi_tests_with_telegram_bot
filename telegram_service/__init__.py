@@ -75,6 +75,8 @@ class TgWorkQueue:
             iscorrect = await quiz_manager.check_round_answer(
                 question_id, ans=[answer]
             )
+            if not iscorrect:
+                return
             text_reply_ans = (
                 "correct shall be: "
                 + "\n".join(

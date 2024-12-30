@@ -3,5 +3,6 @@
         "tests", "-svx"
     ],
     "python.testing.unittestEnabled": false,
+    "python.testing.autoTestDiscoverOnSaveEnabled": false,
     "python.testing.pytestEnabled": true
 }

@@ -1,5 +1,7 @@
 import asyncio
+import json
 import logging
+from urllib.parse import urlencode
 
 import pytest
 import pytest_asyncio
@@ -22,7 +24,9 @@ async def test_show_quiz_handler(client):
         "order": "updated_dt",
         "text": "question",
     }
-    response = client.post(url, json=input_data)
+    
+    url = url + '?' + urlencode(input_data)
+    response = client.get(url)
     assert response.status_code == 200
 
 

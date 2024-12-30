@@ -28,7 +28,7 @@ api_router = APIRouter(
 )
 
 
-@api_router.post(
+@api_router.get(
     "/show-quiz",
     response_model=Optional[QuizResponse],
     responses={
@@ -37,12 +37,13 @@ api_router = APIRouter(
     },
 )
 async def show_quiz(
-    data: QuestionListRequest, session: AsyncSession = Depends(get_session)
-):  # -> list[QuestionResponse]
+    params: QuestionListRequest = Depends(),
+    session: AsyncSession = Depends(get_session),  # type: ignore
+):
     """Show quiz-test page"""
+    data = QuestionListRequest(**params.__dict__)
     q_manager = QuestionsManager(session)
     questions = await q_manager.get_questions_with_answers(data)
-    # return QuizResponse.parse_obj(questions)
     return questions if questions else {}
 
 
@@ -80,7 +81,7 @@ async def add_question(
     id_ = await q_manager.add_question(data)
     if id_:
         return {"created": id_}
-    return {"not": id_}
+    return {"created": False}
 
 
 @api_router.put(
