@@ -1,5 +1,6 @@
 # import asyncio
 import json
+from random import shuffle
 from urllib.parse import urlencode
 
 import aiohttp
@@ -79,38 +80,41 @@ class CallHandlersTg(CallHandlersBase):
 
 
 class CallHandlersQuizBulk(CallHandlersBase):
-    async def load_quiz(self, data=None):
+    async def load_quiz(self, data: dict | None = None) -> QuizResponse | None:
         url = URL_START + "/v1/show-quiz"
         if not data:
-            data = json.dumps(
-                {
-                    "active": 1,
-                    "limit": 50,
-                    "offset": 0,
-                    "order": "updated_dt",
-                    "text": "question",
-                }
-            )
+            data = {
+                "active": 1,
+                "limit": 50,
+                "offset": 0,
+                "order": "updated_dt",
+                "text": "question",
+            }
+
         url = url + "?" + urlencode(data)
         res = await self.load_json_get_handler(url)
         return QuizResponse(**res) if res else None
 
-    async def load_questions(self, data) -> list[QuestionResponse]:
+    async def load_questions(
+        self, data: dict | None = None
+    ) -> list[QuestionResponse]:
         url = URL_START + "/v1/questions"
-        data = """{
-            "active": 1,
-            "limit": 50,
-            "offset": 0,
-            "order": "updated_dt"
-        }"""
-        questions = await self.load_json_post_handler(url, data)
+        if not data:
+            data = {
+                "active": 1,
+                "limit": 50,
+                "offset": 0,
+                "order": "updated_dt",
+            }
+        data_json = json.dumps(data)
+        questions = await self.load_json_post_handler(url, data_json)
         if not questions:
-            return
+            return []
         return [QuestionResponse(**question) for question in questions]
 
 
 class CallHandlersQuizGame(CallHandlersBase):
-    async def get_next_question(self, tg_id: int) -> QuestionResponse:
+    async def get_next_question(self, tg_id: int) -> QuestionResponse | None:
         url = URL_START + "/v1/round-question"
         data = json.dumps({"tg_id": tg_id})
         question = await self.load_json_post_handler(url, data)
@@ -130,7 +134,9 @@ class CallHandlersQuizGame(CallHandlersBase):
         questions_dict = await CallHandlersQuizBulk().load_quiz(data)
         if not questions_dict:
             return None
-        return questions_dict.root[question_id]
+        question = questions_dict.root[question_id]
+        shuffle(question.answers)
+        return question
 
     async def transform_to_text_and_btns(
         self, next_question: QuestionResponseInQuiz
