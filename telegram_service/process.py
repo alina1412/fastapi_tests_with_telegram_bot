@@ -164,11 +164,13 @@ class CallHandlersQuizGame(CallHandlersBase):
         ]
         return QuizOutDto(question=text, buttons=buttons)
 
-    async def edit_score_of_player(self, tg_id: int) -> bool:
+    async def edit_score_of_player(self, tg_id: int) -> int:
         url = URL_START + f"/v1/edit-score?tg_id={tg_id}"
         # data = json.dumps({"tg_id": tg_id})
         res_dict = await self.load_json_put_handler(url, "{}")
-        return "success" in res_dict
+        return (
+            res_dict.get("score", None) if isinstance(res_dict, dict) else None
+        )
 
     async def mark_question_answered(self, question_id: int, tg_id: int):
         url = URL_START + "/v1/mark-answered"

@@ -96,11 +96,19 @@ class TgWorkQueue:
             )
             await self.send_reply(message.chat_id, text_reply_ans)
             if iscorrect.correct:
-                await quiz_manager.edit_score_of_player(message.chat_id)
+                await self.increase_score(message, quiz_manager)
             await quiz_manager.mark_question_answered(
                 question_id, message.chat_id
             )
             await self.next_round(message.chat_id)
+
+    async def increase_score(
+        self, message: MessageInCallbackDto, quiz_manager: CallHandlersQuizGame
+    ) -> None:
+        score = await quiz_manager.edit_score_of_player(message.chat_id)
+        if isinstance(score, int) and score % 5 == 0:
+            score_text = f"Your score is {score}!"
+            await self.send_reply(message.chat_id, score_text)
 
     async def send_test_keyboard(self, chat_id):
         buttons = [
