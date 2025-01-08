@@ -7,7 +7,8 @@ from sqlalchemy import (
     ForeignKey,
     Integer,
     String,
-    text as sa_text,  # Text, DateTime, TIMESTAMP
+    text as sa_text,
+    Text     #, DateTime, TIMESTAMP
 )
 from sqlalchemy.orm import (
     DeclarativeBase,
@@ -36,7 +37,7 @@ class Question(Base):
     __tablename__ = "questions"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    text: Mapped[str] = mapped_column(String(50), nullable=True)
+    text: Mapped[str] = mapped_column(Text, nullable=True)
     active: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
     # answers = relationship("Answer", backref="questions")
     answers = relationship("Answer", back_populates="question")
