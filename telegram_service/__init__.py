@@ -47,7 +47,12 @@ class TgWorkQueue:
     async def process_command_start(self, message: MessageInTextDto):
         quiz_manager = CallHandlersQuizGame()
         await quiz_manager.register_player_if_new(message.chat_id)
-        await self.send_reply(message.chat_id, "ok")
+        start_text = (
+            "Choose a correct translation of the skipped word "
+            "(marked as '___'). "
+            "You can also check you score typing '/score'."
+        )
+        await self.send_reply(message.chat_id, start_text)
         await self.next_round(message.chat_id)
 
     async def process_command_score(self, message: MessageInTextDto):
@@ -90,7 +95,8 @@ class TgWorkQueue:
                 else f"correct: {iscorrect.correct}"
             )
             await self.send_reply(message.chat_id, text_reply_ans)
-            await quiz_manager.edit_score_of_player(message.chat_id)
+            if iscorrect.correct:
+                await quiz_manager.edit_score_of_player(message.chat_id)
             await quiz_manager.mark_question_answered(
                 question_id, message.chat_id
             )
