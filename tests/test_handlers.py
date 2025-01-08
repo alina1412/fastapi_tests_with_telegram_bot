@@ -1,8 +1,12 @@
 import asyncio
+import json
 import logging
+from urllib.parse import urlencode
 
 import pytest
 import pytest_asyncio
+
+from service.schemas import IsCorrectAnsResponse
 
 pytest_plugins = ("pytest_asyncio",)
 logging.basicConfig(level=logging.DEBUG)
@@ -20,7 +24,9 @@ async def test_show_quiz_handler(client):
         "order": "updated_dt",
         "text": "question",
     }
-    response = client.post(url, json=input_data)
+    
+    url = url + '?' + urlencode(input_data)
+    response = client.get(url)
     assert response.status_code == 200
 
 
@@ -90,7 +96,8 @@ async def test_submit_answer_handler(client):
     url = "/v1/submit-answer?question_id=" + str(q_id)
     response = client.post(url, json=[id_])
     assert response.status_code == 200
-    assert "correct" in response.json()
+    res = IsCorrectAnsResponse(**response.json())
+    assert res.correct
 
 
 async def test_delete_answer_handler(client):

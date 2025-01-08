@@ -96,8 +96,8 @@ async def edit_player_score(
 ):
     """Request for edit_score"""
     db_game = GameDb(session)
-    await db_game.raise_score(params.tg_id)
-    return {"success": "1"}
+    score = await db_game.raise_score(params.tg_id)
+    return {"success": "1", "score": score}
 
 
 @api_router.post(

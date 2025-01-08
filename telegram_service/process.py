@@ -1,10 +1,13 @@
 # import asyncio
 import json
+from random import shuffle
+from urllib.parse import urlencode
 
 import aiohttp
 
 from service.schemas import (
     IsCorrectAnsResponse,
+    QuestionAddResponse,
     QuestionResponse,
     QuestionResponseInQuiz,
     QuizResponse,
@@ -20,7 +23,7 @@ class CallHandlersBase:
             async with session.post(
                 url, data=data, headers={"Content-Type": "application/json"}
             ) as resp:
-                if resp.status != 200:
+                if resp.status not in (200, 201):
                     logger.error(await resp.json())
                     return None
                 json_resp = await resp.json()
@@ -32,7 +35,7 @@ class CallHandlersBase:
             async with session.put(
                 url, data=data, headers={"Content-Type": "application/json"}
             ) as resp:
-                if resp.status != 200:
+                if resp.status not in (200, 201):
                     logger.error(await resp.json())
                     return None
                 json_resp = await resp.json()
@@ -46,7 +49,7 @@ class CallHandlersBase:
                 # **kwargs,
                 headers={"Content-Type": "application/json"},
             ) as resp:
-                if resp.status != 200:
+                if resp.status not in (200, 204):
                     logger.error(await resp.json())
                     return None
                 json_resp = await resp.json()
@@ -77,35 +80,41 @@ class CallHandlersTg(CallHandlersBase):
 
 
 class CallHandlersQuizBulk(CallHandlersBase):
-    async def load_quiz(self, data=None):
+    async def load_quiz(self, data: dict | None = None) -> QuizResponse | None:
         url = URL_START + "/v1/show-quiz"
         if not data:
-            data = json.dumps(
-                {
-                    "active": 1,
-                    "limit": 50,
-                    "offset": 0,
-                    "order": "updated_dt",
-                    "text": "question",
-                }
-            )
-        res = await self.load_json_post_handler(url, data)
-        return QuizResponse(**res)
+            data = {
+                "active": 1,
+                "limit": 50,
+                "offset": 0,
+                "order": "updated_dt",
+                "text": "question",
+            }
 
-    async def load_questions(self, data) -> list[QuestionResponse]:
+        url = url + "?" + urlencode(data)
+        res = await self.load_json_get_handler(url)
+        return QuizResponse(**res) if res else None
+
+    async def load_questions(
+        self, data: dict | None = None
+    ) -> list[QuestionResponse]:
         url = URL_START + "/v1/questions"
-        data = """{
-            "active": 1,
-            "limit": 50,
-            "offset": 0,
-            "order": "updated_dt"
-        }"""
-        questions = await self.load_json_post_handler(url, data)
+        if not data:
+            data = {
+                "active": 1,
+                "limit": 50,
+                "offset": 0,
+                "order": "updated_dt",
+            }
+        data_json = json.dumps(data)
+        questions = await self.load_json_post_handler(url, data_json)
+        if not questions:
+            return []
         return [QuestionResponse(**question) for question in questions]
 
 
 class CallHandlersQuizGame(CallHandlersBase):
-    async def get_next_question(self, tg_id: int) -> QuestionResponse:
+    async def get_next_question(self, tg_id: int) -> QuestionResponse | None:
         url = URL_START + "/v1/round-question"
         data = json.dumps({"tg_id": tg_id})
         question = await self.load_json_post_handler(url, data)
@@ -121,11 +130,13 @@ class CallHandlersQuizGame(CallHandlersBase):
             logger.info("not next question_id")
             return None
         question_id = res["question_id"]
-        data = json.dumps(res)
+        data = res  # json.dumps(res)
         questions_dict = await CallHandlersQuizBulk().load_quiz(data)
         if not questions_dict:
             return None
-        return questions_dict.root[question_id]
+        question = questions_dict.root[question_id]
+        shuffle(question.answers)
+        return question
 
     async def transform_to_text_and_btns(
         self, next_question: QuestionResponseInQuiz
@@ -153,11 +164,13 @@ class CallHandlersQuizGame(CallHandlersBase):
         ]
         return QuizOutDto(question=text, buttons=buttons)
 
-    async def edit_score_of_player(self, tg_id: int) -> bool:
+    async def edit_score_of_player(self, tg_id: int) -> int:
         url = URL_START + f"/v1/edit-score?tg_id={tg_id}"
         # data = json.dumps({"tg_id": tg_id})
         res_dict = await self.load_json_put_handler(url, "{}")
-        return "success" in res_dict
+        return (
+            res_dict.get("score", None) if isinstance(res_dict, dict) else None
+        )
 
     async def mark_question_answered(self, question_id: int, tg_id: int):
         url = URL_START + "/v1/mark-answered"
@@ -193,14 +206,16 @@ class CallHandlersQuizGame(CallHandlersBase):
 
 
 class CallHandlersAdminFunc(CallHandlersBase):
-    async def add_question(self, data):
+    async def add_question(self, data: dict):
         """data_example = {
             "active": 1,
             "text": "question"
         }
         """
         url = URL_START + "/v1/add-question"
-        return await self.load_json_post_handler(url, data)
+        data = json.dumps(data)
+        res = await self.load_json_post_handler(url, data)
+        return QuestionAddResponse(**res) if res else None
 
     async def edit_question(self, question_dto):
         question_id = question_dto.question_id
@@ -215,7 +230,7 @@ class CallHandlersAdminFunc(CallHandlersBase):
         data = json.dumps(ans)
         return await self.load_json_put_handler(url, data)
 
-    async def add_answer(self, data):
+    async def add_answer(self, data: dict):
         """data_example = {
             "correct": true,
             "question_id": 1,
@@ -223,6 +238,7 @@ class CallHandlersAdminFunc(CallHandlersBase):
         }
         """
         url = URL_START + "/v1/add-answer"
+        data = json.dumps(data)
         return await self.load_json_post_handler(url, data)
 
     async def delete_question(self, q_id):
