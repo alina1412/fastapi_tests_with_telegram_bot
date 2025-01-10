@@ -16,12 +16,8 @@ def connect_string() -> str:
 
 def async_database_uri() -> str:
     """Return the async database URL."""
-    return "postgresql+asyncpg://" + connect_string()
+    return db_settings['db_driver'] + connect_string()
 
-
-def sync_database_uri() -> str:
-    """Return the sync database URL."""
-    return "postgresql://" + connect_string()
 
 
 class DBManager:

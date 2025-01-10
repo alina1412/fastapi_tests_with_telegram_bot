@@ -15,6 +15,7 @@ db_settings = {
     "db_user": environ.get("DB_USERNAME"),
     "db_port": int(environ.get("DB_PORT")),
     "db_password": environ.get("DB_PASSWORD"),
+    "db_driver": environ.get("DB_DRIVER"),
 }
 
 
