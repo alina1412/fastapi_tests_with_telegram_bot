@@ -6,6 +6,7 @@ from sqlalchemy import (
     Column,
     ForeignKey,
     Integer,
+    BigInteger,
     String,
     text as sa_text,
     Text,  # DateTime, TIMESTAMP
@@ -76,7 +77,7 @@ class Player(Base):
     __tablename__ = "players"
 
     id = Column(Integer, primary_key=True)
-    tg_id = Column(Integer, unique=True, nullable=False)
+    tg_id = Column(BigInteger, unique=True, nullable=False)
     score = Column(Integer, nullable=False, server_default="0")
 
 
@@ -89,7 +90,7 @@ class Rounds(Base):
         ForeignKey("questions.id", ondelete="CASCADE")
     )
     player_id: Mapped[int] = mapped_column(
-        ForeignKey("players.tg_id", ondelete="CASCADE")
+        BigInteger, ForeignKey("players.tg_id", ondelete="CASCADE")
     )
 
 
