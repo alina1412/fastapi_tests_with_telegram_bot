@@ -8,7 +8,7 @@ from sqlalchemy import (
     Integer,
     String,
     text as sa_text,
-    Text     #, DateTime, TIMESTAMP
+    Text,  # DateTime, TIMESTAMP
 )
 from sqlalchemy.orm import (
     DeclarativeBase,

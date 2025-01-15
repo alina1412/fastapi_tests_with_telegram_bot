@@ -1,5 +1,6 @@
 import sqlalchemy as sa
-from sqlalchemy.dialects.postgresql import insert
+from sqlalchemy.dialects.postgresql import insert as ps_insert
+from sqlalchemy.dialects.mysql import insert as mysql_insert
 
 # from sqlalchemy import select, update, or_, delete
 from sqlalchemy.exc import IntegrityError
@@ -7,7 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import joinedload  # , lazyload, load_only
 from sqlalchemy.sql.expression import false, true
 
-from service.config import logger
+from service.config import logger, db_settings
 from service.db_setup.models import (
     Answer,
     Player,
@@ -27,12 +28,10 @@ class QuestionDb:
         self.session = session
 
     async def add_question(self, vals) -> int | None:
-        query = insert(Question).values(**vals).on_conflict_do_nothing()
+        query = sa.insert(Question).values(**vals)
         result = await self.session.execute(query)
-        if result.rowcount:
-            logger.info("added %s", result.returned_defaults[0])
-            return result.returned_defaults[0]  # id
-        return None
+        return result.lastrowid if result.lastrowid else None
+        # logger.info("added %s", result.returned_defaults[0])
 
     async def remove_question(self, id_: int) -> int:
         query = sa.delete(Question).where(*(Question.id == id_,))
@@ -179,11 +178,9 @@ class AnswerDb:
         self.session = session
 
     async def add_answer(self, vals) -> int | None:
-        query = insert(Answer).values(**vals)  # .on_conflict_do_nothing()
+        query = sa.insert(Answer).values(**vals)
         result = await self.session.execute(query)
-        if result.rowcount and result.returned_defaults:
-            return result.returned_defaults[0]  # id
-        return None
+        return result.lastrowid if result.lastrowid else None
 
     async def remove_answer(self, id_: int) -> int:
         query = sa.delete(Answer).where(Answer.id == id_)
@@ -227,16 +224,13 @@ class TgDb:
         self.session = session
 
     async def update_tg_id(self, id_: int):
-        query = (
-            sa.update(TgUpdate)
-            .where(TgUpdate.id == sa.select(TgUpdate.id).limit(1))
-            .values(**{"id": id_})
-        )
+        query = sa.update(TgUpdate).values(**{"id": id_})
         await self.session.execute(query)
 
     async def get_last_tg_id(self):
         query = sa.select(TgUpdate.id).limit(1)
-        return (await self.session.execute(query)).scalar_one_or_none()
+        res = (await self.session.execute(query)).scalar_one_or_none()
+        return res
 
 
 class UserDb:
@@ -255,12 +249,17 @@ class UserDb:
 
     async def put(self, session, username, password):
         vals = {"username": username, "password": password}
-        query = insert(self.model).values(**vals).on_conflict_do_nothing()
+        if "postgresql" in db_settings["db_driver"]:
+            query = (
+                ps_insert(self.model).values(**vals).on_conflict_do_nothing()
+            )
+        else:
+            query = (
+                mysql_insert(self.model).values(**vals).prefix_with("IGNORE")
+            )
 
         result = await session.execute(query)
-        if result.rowcount:
-            return result.returned_defaults[0]  # id
-        return None
+        return result.lastrowid if result.lastrowid else None
 
     async def update(self, session):
         vals = {"id": 100, User.active.key: User.active or 0}
@@ -304,9 +303,10 @@ class GameDb:
             .limit(amount)
         )
         query_insert_rounds = (
-            sa.insert(Rounds)
-            .from_select(["question_id", "player_id"], sub_query_choice)
-            .returning(Rounds.id)
+            sa.insert(Rounds).from_select(
+                ["question_id", "player_id"], sub_query_choice
+            )
+            # .returning(Rounds.id)
         )
         try:
             result = await self.session.execute(query_insert_rounds)
@@ -321,13 +321,16 @@ class GameDb:
         await self.session.execute(query)
 
     async def raise_score(self, user_tg_id: int) -> int | None:
-        query = (
+        upd_query = (
             sa.update(Player)
             .where(Player.tg_id == user_tg_id)
             .values(**{"score": Player.__table__.c.score + 1})
-            .returning(Player.score)
+            # .returning(Player.score)
         )
-        return (await self.session.execute(query)).scalar_one_or_none()
+        await self.session.execute(upd_query)
+
+        select_query = sa.select(Player.score).where(Player.tg_id == user_tg_id)
+        return (await self.session.execute(select_query)).scalar_one_or_none()
 
     async def get_next_question_id(self, user_tg_id: int) -> int | None:
         query = sa.select(Rounds.question_id).where(
@@ -350,15 +353,26 @@ class GameDb:
         await self.session.execute(query)
 
     async def create_player(self, user_tg_id: int) -> int | None:
-        query = (
-            insert(Player)
-            .values(**{"tg_id": user_tg_id})
-            .on_conflict_do_nothing()
-        )
+        if "postgresql" in db_settings["db_driver"]:
+            query = (
+                ps_insert(Player)
+                .values(**{"tg_id": user_tg_id})
+                .on_conflict_do_nothing()
+                .returning(Player.id)
+            )
+        else:
+            query = (
+                mysql_insert(Player)
+                .values(**{"tg_id": user_tg_id})
+                .prefix_with("IGNORE")
+                # .returning(Player.id)
+            )
+            # result = await self.session.execute(query)
+            # if result.rowcount:
+            #     inserted_id = (await self.session.execute(sa.text("SELECT LAST_INSERT_ID()"))).scalar()
+            #     return inserted_id
         result = await self.session.execute(query)
-        if result.rowcount:
-            return result.returned_defaults[0]  # id
-        return None
+        return result.lastrowid if result.lastrowid else None
 
     async def get_score_of_player(self, user_tg_id: int) -> int | None:
         query = sa.select(Player.score).where(Player.tg_id == user_tg_id)

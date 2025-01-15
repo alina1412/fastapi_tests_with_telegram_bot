@@ -2,7 +2,12 @@ from typing import AsyncGenerator
 
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.orm import sessionmaker
-
+from sqlalchemy.ext.asyncio import (
+    # AsyncEngine,
+    AsyncSession,
+    # async_sessionmaker,
+    create_async_engine,
+)
 from service.config import db_settings
 
 
@@ -16,28 +21,41 @@ def connect_string() -> str:
 
 def async_database_uri() -> str:
     """Return the async database URL."""
-    return db_settings['db_driver'] + connect_string()
-
+    return db_settings["db_driver"] + "://" + connect_string()
 
 
 class DBManager:
+    def __init__(self):
+        self.engine = None
+
     @property
     def uri(self) -> str:
         return async_database_uri()
 
-    @property
-    def engine(self):
-        return create_async_engine(self.uri, echo=True, future=True)
+    def get_engine(self):
+        self.engine = create_async_engine(
+            self.uri,
+            pool_size=1,
+            max_overflow=0,
+            pool_recycle=280,
+            pool_timeout=20,
+            echo=True,
+            future=True,
+        )
+        return self.engine
 
     @property
     def session_maker(self):
+        if not self.engine:
+            self.get_engine()
         return sessionmaker(
             self.engine, class_=AsyncSession, expire_on_commit=False
         )
 
 
 async def get_session() -> AsyncGenerator:
-    async with DBManager().session_maker() as session:
+    db_manager = DBManager()
+    async with db_manager.session_maker() as session:
         try:
             yield session
             await session.commit()
@@ -46,3 +64,5 @@ async def get_session() -> AsyncGenerator:
             raise exc
         finally:
             await session.close()
+            if db_manager.engine:
+                await db_manager.engine.dispose()

@@ -30,6 +30,6 @@ logging.basicConfig(
     level=logging.WARNING,
     format="""[%(asctime)s] {%(filename)s:%(lineno)d} 
                         %(levelname)s - %(message)s""",
-    datefmt="%H:%M:%S",
+    datefmt="%H:%M:%S",  # datefmt='%Y-%m-%d %H:%M:%S',
 )
 logger = logging.getLogger(__name__)

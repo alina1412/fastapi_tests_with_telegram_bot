@@ -64,7 +64,6 @@ class QuestionAddRequest(BaseModel):
             "example": {
                 "text": "question1",
                 "active": 1,
-                "id": None,
             }
         }
 

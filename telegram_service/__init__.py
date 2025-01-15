@@ -63,6 +63,8 @@ class TgWorkQueue:
     async def next_round(self, chat_id: int):
         quiz_manager = CallHandlersQuizGame()
         next_question = await quiz_manager.next_question_with_ans_opts(chat_id)
+        if not next_question:
+            return
         quiz_out = await quiz_manager.transform_to_text_and_btns(next_question)
         await self.send_reply_keyboard(
             chat_id=chat_id,
