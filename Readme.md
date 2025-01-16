@@ -45,3 +45,6 @@ alembic (if from scratch):
 alembic init -t async migration
 alembic revision --autogenerate -m 'initial'
 ```
+
+for mysql:
+pip install asyncmy, cryptography

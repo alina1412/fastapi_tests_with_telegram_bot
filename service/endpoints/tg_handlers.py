@@ -19,7 +19,7 @@ api_router = APIRouter(
     },
 )
 async def tg_update(
-    upd_data: TgUpdateIdRequest = 0,
+    upd_data: TgUpdateIdRequest,
     session: AsyncSession = Depends(get_session),
 ):
     """tg.update"""

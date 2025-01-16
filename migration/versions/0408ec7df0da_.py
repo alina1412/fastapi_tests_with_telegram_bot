@@ -55,7 +55,7 @@ def upgrade() -> None:
 
     op.create_table('players',
     sa.Column('id', sa.Integer(), nullable=False),
-    sa.Column('tg_id', sa.Integer(), nullable=False),
+    sa.Column('tg_id', sa.BigInteger(), nullable=False),
     sa.Column('score', sa.Integer(), nullable=False, server_default="0"),
     sa.PrimaryKeyConstraint('id'),
     sa.UniqueConstraint('tg_id')
@@ -66,7 +66,7 @@ def upgrade() -> None:
     sa.Column('asked', sa.Boolean(), nullable=True, server_default="False"),
     sa.Column('question_id', sa.Integer(), nullable=False),
     sa.ForeignKeyConstraint(['question_id'], ['questions.id'], ondelete='CASCADE'),
-    sa.Column('player_id', sa.Integer(), nullable=False),
+    sa.Column('player_id', sa.BigInteger(), nullable=False),
     sa.ForeignKeyConstraint(['player_id'], ['players.tg_id'], ondelete='CASCADE'),
     sa.PrimaryKeyConstraint('id')
     )

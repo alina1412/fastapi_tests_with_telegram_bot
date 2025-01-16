@@ -16,6 +16,7 @@ DB_HOST: str = settingenv("DB_HOST", default="localhost", cast=str)
 DB_USERNAME: str = settingenv("DB_USERNAME", cast=str)
 DB_PORT: str = settingenv("DB_PORT", cast=str)
 DB_PASSWORD: str = settingenv("DB_PASSWORD", cast=str)
+DB_DRIVER: str = settingenv("DB_DRIVER", cast=str)
 
 config = context.config
 section = config.config_ini_section
@@ -25,7 +26,7 @@ config.set_section_option(section, "DB_PASSWORD", DB_PASSWORD)
 config.set_section_option(section, "DB_HOST", DB_HOST)
 config.set_section_option(section, "DB_PORT", DB_PORT)
 config.set_section_option(section, "DB_NAME", DB_NAME)
-
+config.set_section_option(section, "DB_DRIVER", DB_DRIVER)
 # Interpret the config file for Python logging.
 # This line sets up loggers basically.
 if config.config_file_name is not None:

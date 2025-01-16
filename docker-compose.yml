@@ -19,6 +19,22 @@ services:
     volumes:
       - ./.database_data:/var/lib/postgresql/data
 
+  # db2:
+  #   container_name: mysql2_${DB_NAME}
+  #   image: 'mysql/mysql-server:8.0'
+  #   env_file: .env
+  #   environment:
+  #     MYSQL_DATABASE: ${DB_NAME}
+  #     MYSQL_USER: '${DB_USERNAME}'
+  #     MYSQL_PASSWORD: '${DB_PASSWORD}'
+  #     MYSQL_ROOT_PASSWORD: ${DB_PASSWORD}
+  #   ports:
+  #     - ${DB_PORT}:3306
+  #   healthcheck:
+  #     test: [ "CMD", "mysqladmin", "ping", "-p${DB_PASSWORD}" ]
+  #     retries: 3
+  #     timeout: 5s
+
 
 volumes:
   .database_data:
