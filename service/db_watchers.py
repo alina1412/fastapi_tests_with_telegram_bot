@@ -1,6 +1,6 @@
 import sqlalchemy as sa
-from sqlalchemy.dialects.postgresql import insert as ps_insert
 from sqlalchemy.dialects.mysql import insert as mysql_insert
+from sqlalchemy.dialects.postgresql import insert as ps_insert
 
 # from sqlalchemy import select, update, or_, delete
 from sqlalchemy.exc import IntegrityError
@@ -8,7 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import joinedload  # , lazyload, load_only
 from sqlalchemy.sql.expression import false, true
 
-from service.config import logger, db_settings
+from service.config import db_settings, logger
 from service.db_setup.models import (
     Answer,
     Player,
