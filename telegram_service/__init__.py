@@ -48,8 +48,10 @@ class TgWorkQueue:
         quiz_manager = CallHandlersQuizGame()
         await quiz_manager.register_player_if_new(message.chat_id)
         start_text = (
+            "Bot helps to remember translation of words.\n"
+            "It sends questions (without a stop).\n\n"
             "Choose a correct translation of the skipped word "
-            "(marked as '___'). "
+            "(marked as '___'). \n\n"
             "You can also check you score typing '/score'."
         )
         await self.send_reply(message.chat_id, start_text)
