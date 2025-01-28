@@ -1,6 +1,6 @@
 import sqlalchemy as sa
-from sqlalchemy.dialects.postgresql import insert as ps_insert
 from sqlalchemy.dialects.mysql import insert as mysql_insert
+from sqlalchemy.dialects.postgresql import insert as ps_insert
 
 # from sqlalchemy import select, update, or_, delete
 from sqlalchemy.exc import IntegrityError
@@ -8,7 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import joinedload  # , lazyload, load_only
 from sqlalchemy.sql.expression import false, true
 
-from service.config import logger, db_settings
+from service.config import db_settings, logger
 from service.db_setup.models import (
     Answer,
     Player,
@@ -30,7 +30,10 @@ class QuestionDb:
     async def add_question(self, vals) -> int | None:
         query = sa.insert(Question).values(**vals)
         result = await self.session.execute(query)
-        return result.lastrowid if result.lastrowid else None
+        if "postgresql" in db_settings["db_driver"]:
+            return result.returned_defaults[0]
+        else:
+            return result.lastrowid if result.lastrowid else None
         # logger.info("added %s", result.returned_defaults[0])
 
     async def remove_question(self, id_: int) -> int:
@@ -180,7 +183,10 @@ class AnswerDb:
     async def add_answer(self, vals) -> int | None:
         query = sa.insert(Answer).values(**vals)
         result = await self.session.execute(query)
-        return result.lastrowid if result.lastrowid else None
+        if "postgresql" in db_settings["db_driver"]:
+            return result.returned_defaults[0]
+        else:
+            return result.lastrowid if result.lastrowid else None
 
     async def remove_answer(self, id_: int) -> int:
         query = sa.delete(Answer).where(Answer.id == id_)
@@ -259,7 +265,10 @@ class UserDb:
             )
 
         result = await session.execute(query)
-        return result.lastrowid if result.lastrowid else None
+        if "postgresql" in db_settings["db_driver"]:
+            return result.returned_defaults[0]
+        else:
+            return result.lastrowid if result.lastrowid else None
 
     async def update(self, session):
         vals = {"id": 100, User.active.key: User.active or 0}
@@ -360,6 +369,8 @@ class GameDb:
                 .on_conflict_do_nothing()
                 .returning(Player.id)
             )
+            result = await self.session.execute(query)
+            return result.returned_defaults[0]
         else:
             query = (
                 mysql_insert(Player)
@@ -371,8 +382,11 @@ class GameDb:
             # if result.rowcount:
             #     inserted_id = (await self.session.execute(sa.text("SELECT LAST_INSERT_ID()"))).scalar()
             #     return inserted_id
-        result = await self.session.execute(query)
-        return result.lastrowid if result.lastrowid else None
+            result = await self.session.execute(query)
+            if "postgresql" in db_settings["db_driver"]:
+                return result.returned_defaults[0]
+            else:
+                return result.lastrowid if result.lastrowid else None
 
     async def get_score_of_player(self, user_tg_id: int) -> int | None:
         query = sa.select(Player.score).where(Player.tg_id == user_tg_id)

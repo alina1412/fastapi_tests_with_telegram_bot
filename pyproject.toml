@@ -1,35 +1,68 @@
-[tool.poetry]
-name = "fastapi-quiz"
+
+[project]
+name = "quizzes-api"
 version = "0.1.0"
 description = ""
-authors = ["alina1412 <alina1412@mail.ru>"]
+authors = [
+    {name = "alina1412",email = "alina1412@mail.ru"}
+]
 readme = "README.md"
-packages = [{include = "fastapi_quiz"}]
+requires-python = ">=3.10,<4.0"
+dependencies = [
+    "alembic (==1.14.1)",
+    "annotated-types (==0.7.0)",
+    "anyio (==4.8.0)",
+    "async-timeout (==5.0.1)",
+    "asyncmy (==0.2.10)",
+    "asyncpg (==0.29.0)",
+    "certifi (==2024.12.14)",
+    "cffi (==1.17.1)",
+    "charset-normalizer (==3.4.1)",
+    "click (==8.1.8)",
+    "colorama (==0.4.6)",
+    "cryptography (==44.0.0)",
+    "exceptiongroup (==1.2.2)",
+    "fastapi (==0.115.7)",
+    "greenlet (==3.1.1)",
+    "h11 (==0.14.0)",
+    "httpcore (==1.0.7)",
+    "httpx (==0.28.1)",
+    "idna (==3.10)",
+    "iniconfig (==2.0.0)",
+    "mako (==1.3.8)",
+    "markupsafe (==3.0.2)",
+    "packaging (==24.2)",
+    "pluggy (==1.5.0)",
+    "psycopg2-binary (==2.9.10)",
+    "pycparser (==2.22)",
+    "pydantic (==2.10.6)",
+    "pydantic-core (==2.27.2)",
+    "pytest (==8.3.4)",
+    "python-dotenv (==0.21.1)",
+    "pytz (==2024.2)",
+    "requests (==2.32.3)",
+    "sniffio (==1.3.1)",
+    "sqlalchemy (==2.0.37)",
+    "starlette (==0.45.3)",
+    "tomli (==2.2.1)",
+    "typing-extensions (==4.12.2)",
+    "urllib3 (==2.3.0)",
+    "uvicorn (==0.19.0)"
+]
 
-[tool.poetry.dependencies]
-python = "^3.10"
-uvicorn = "^0.19.0"
-python-dotenv = "^0.21.0"
-alembic = "^1.13.2"
-black = "^24.8.0"
-pylint = "^3.2.6"
-pytest = "^8.3.2"
-pytest-asyncio = "^0.24.0"
-asyncpg = "^0.29.0"
-psycopg2-binary = "^2.9.9"
-pytz = "^2024.1"
-requests = "^2.32.3"
-isort = "^5.13.2"
-httpx = "^0.27.2"
-fastapi = "^0.114.2"
-poetry-plugin-export = "^1.8.0"
-pytest-cov = "^5.0.0"
-ruff = "^0.8.2"
+[tool.poetry]
 
+
+[tool.poetry.group.dev.dependencies]
+pytest-asyncio = "^0.25.2"
+ruff = "^0.9.3"
 
 [build-system]
-requires = ["poetry-core"]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
 build-backend = "poetry.core.masonry.api"
+
+
+
 
 [tool.pytest.ini_options]
 asyncio_default_fixture_loop_scope = "function"
@@ -59,6 +92,7 @@ exclude = [
     ".venv",
     "__pypackages__",
     "alembic",
+    "migration",
     "_build",
     "buck-out",
     "build",
@@ -120,9 +154,9 @@ extend-select = [
     "RUF",      # https://docs.astral.sh/ruff/rules/#ruff-specific-rules-ruf
     "SIM",      # https://docs.astral.sh/ruff/rules/#flake8-simplify-sim
     "T20",      # https://docs.astral.sh/ruff/rules/#flake8-print-t20
-    "TRIO",     # https://docs.astral.sh/ruff/rules/#flake8-trio-trio
+    "ASYNC1",     # https://docs.astral.sh/ruff/rules/#flake8-trio-trio
     "TRY300",   # https://docs.astral.sh/ruff/rules/try-consider-else
-    "TRY302",   # https://docs.astral.sh/ruff/rules/useless-try-except
+    "TRY203",   # https://docs.astral.sh/ruff/rules/useless-try-except
     "TRY401",   # https://docs.astral.sh/ruff/rules/verbose-log-message
     "UP",       # https://docs.astral.sh/ruff/rules/#pyupgrade-up
     "YTT",      # https://docs.astral.sh/ruff/rules/#flake8-2020-ytt
@@ -136,6 +170,8 @@ extend-ignore = [
     "D415",     # https://docs.astral.sh/ruff/rules/ends-in-punctuation
     "D400",
     "D401",
+    "RET504",
+    "B008",
 
     "PLR2004",  # https://docs.astral.sh/ruff/rules/magic-value-comparison
     "PLR0904",  # https://docs.astral.sh/ruff/rules/too-many-public-methods 
@@ -147,9 +183,6 @@ extend-ignore = [
     "PLR0913",  # https://docs.astral.sh/ruff/rules/too-many-arguments 
     "PLR1714",  # https://docs.astral.sh/ruff/rules/repeated-equality-comparison 
     "PERF203",  # https://docs.astral.sh/ruff/rules/try-except-in-loop 
-
-    "PT004",    # https://docs.astral.sh/ruff/rules/pytest-missing-fixture-name-underscore
-    "PT005",    # https://docs.astral.sh/ruff/rules/pytest-incorrect-fixture-name-underscore
 
     "PT007",    # https://docs.astral.sh/ruff/rules/pytest-parametrize-values-wrong-type 
 

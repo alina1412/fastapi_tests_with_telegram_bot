@@ -1,18 +1,18 @@
 from typing import AsyncGenerator
 
-from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
-from sqlalchemy.orm import sessionmaker
 from sqlalchemy.ext.asyncio import (
     # AsyncEngine,
     AsyncSession,
     # async_sessionmaker,
     create_async_engine,
 )
+from sqlalchemy.orm import sessionmaker
+
 from service.config import db_settings
 
 
 def connect_string() -> str:
-    """string without a driver. DB_HOST should be 'db' in docker"""
+    """String without a driver. DB_HOST should be 'db' in docker."""
     return (
         f"{db_settings['db_user']}:{db_settings['db_password']}"
         f"@{db_settings['db_host']}:{db_settings['db_port']}/{db_settings['db_name']}"

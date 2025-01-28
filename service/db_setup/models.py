@@ -2,14 +2,14 @@ from datetime import datetime
 
 import sqlalchemy as sa
 from sqlalchemy import (
+    BigInteger,
     Boolean,
     Column,
     ForeignKey,
     Integer,
-    BigInteger,
     String,
-    text as sa_text,
     Text,  # DateTime, TIMESTAMP
+    text as sa_text,
 )
 from sqlalchemy.orm import (
     DeclarativeBase,
