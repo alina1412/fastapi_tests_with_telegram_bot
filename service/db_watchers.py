@@ -376,17 +376,13 @@ class GameDb:
                 mysql_insert(Player)
                 .values(**{"tg_id": user_tg_id})
                 .prefix_with("IGNORE")
-                # .returning(Player.id)
             )
             # result = await self.session.execute(query)
             # if result.rowcount:
             #     inserted_id = (await self.session.execute(sa.text("SELECT LAST_INSERT_ID()"))).scalar()
             #     return inserted_id
             result = await self.session.execute(query)
-            if "postgresql" in db_settings["db_driver"]:
-                return result.returned_defaults[0]
-            else:
-                return result.lastrowid if result.lastrowid else None
+            return result.lastrowid if result.lastrowid else None
 
     async def get_score_of_player(self, user_tg_id: int) -> int | None:
         query = sa.select(Player.score).where(Player.tg_id == user_tg_id)
