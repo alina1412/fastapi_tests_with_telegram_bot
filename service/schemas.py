@@ -76,8 +76,6 @@ class QuestionEditRequest(BaseModel):
 
 
 class QuestionResponse(BaseModel):
-    """Schema for output."""
-
     id: int = Field(description="id of a question")
     text: str = Field(description="text")
     active: int = Field(description="if question is active")
@@ -102,8 +100,6 @@ class QuizListResponse(BaseModel):
 
 
 class AnswerRequest(BaseModel):
-    """Schema for input."""
-
     id: int | None = Field(description="id of an answer", default=None)
     text: str = Field(description="text", min_length=1, max_length=50)
     correct: bool = Field(description="if answer is correct")
@@ -121,8 +117,6 @@ class AnswerRequest(BaseModel):
 
 
 class AnswerAddRequest(BaseModel):
-    """Schema for input."""
-
     text: str = Field(
         example="answer 1", description="text", min_length=1, max_length=50
     )
@@ -146,8 +140,6 @@ class AnswerSubmitRequest(BaseModel):
 
 
 class AnswerResponse(BaseModel):
-    """Schema for output."""
-
     id: int = Field(description="id of an answer")
     text: str = Field(description="text")
     correct: bool = Field(description="if answer is correct")
@@ -198,7 +190,7 @@ class QuestionIdResponse(BaseModel):
     question_id: int = Field(description="question_id")
 
 
-class QuestionResponseInQuiz(BaseModel):
+class QuestionInQuizResponse(BaseModel):
     id: int
     text: str
     active: int
@@ -206,7 +198,7 @@ class QuestionResponseInQuiz(BaseModel):
 
 
 class QuizResponse(RootModel):
-    root: Dict[int, QuestionResponseInQuiz]
+    root: Dict[int, QuestionInQuizResponse]
 
 
 class DeleteResponse(BaseModel):

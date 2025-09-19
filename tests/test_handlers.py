@@ -24,8 +24,8 @@ async def test_show_quiz_handler(client):
         "order": "updated_dt",
         "text": "question",
     }
-    
-    url = url + '?' + urlencode(input_data)
+
+    url = url + "?" + urlencode(input_data)
     response = client.get(url)
     assert response.status_code == 200
 
@@ -65,6 +65,7 @@ def add_answer(client, q_id, url="/v1/add-answer"):
 async def test_add_question_handler(client):
     q_id = add_question(client, "/v1/add-question")
     assert q_id
+
 
 @pytest.mark.skip()
 async def test_edit_question_handler(client):

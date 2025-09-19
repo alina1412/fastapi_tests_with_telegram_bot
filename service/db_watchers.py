@@ -323,14 +323,11 @@ class GameDb(QueryTypeDb):
             .order_by(sa.func.random())
             .limit(amount)
         )
-        query_insert_rounds = (
-            sa.insert(Rounds).from_select(
-                ["question_id", "player_id"], sub_query_choice
-            )
-            # .returning(Rounds.id)
+        query_insert_rounds = sa.insert(Rounds).from_select(
+            ["question_id", "player_id"], sub_query_choice
         )
         try:
-            result = await self.session.execute(query_insert_rounds)
+            await self.session.execute(query_insert_rounds)
         except IntegrityError as err:
             logger.error("error ", exc_info=err)
             raise err
@@ -346,7 +343,6 @@ class GameDb(QueryTypeDb):
             sa.update(Player)
             .where(Player.tg_id == user_tg_id)
             .values(**{"score": Player.__table__.c.score + 1})
-            # .returning(Player.score)
         )
         await self.session.execute(upd_query)
 

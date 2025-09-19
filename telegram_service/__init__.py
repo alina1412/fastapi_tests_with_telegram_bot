@@ -26,6 +26,8 @@ class TgWorkQueue:
             )
             await self.process_callback(message_dto)
         else:
+            if "message" not in message:
+                return
             message_dto = MessageInTextDto(
                 chat_id=message["message"]["chat"]["id"],
                 text_input=message["message"]["text"],
@@ -155,7 +157,9 @@ class TgWorkQueue:
             async with client.post(url, data=data) as resp:
                 if resp.status != 200:
                     try:
-                        err = json.loads(resp.content._buffer[0])["description"]
+                        err = json.loads(resp.content._buffer[0])[
+                            "description"
+                        ]
                         logger.error("tg error %s", err, exc_info=1)
                     except Exception as exc:
                         logger.error("tg error", exc_info=exc)
