@@ -6,6 +6,7 @@ from service.config import logger
 from service.db_setup.db_settings import get_session
 from service.db_watchers import GameDb
 from service.schemas import (
+    MarkAnsweredResponse,
     QuestionGetOneRequest,
     QuestionIdResponse,
     QuestionResponse,
@@ -139,7 +140,7 @@ async def player_score(
 
 @api_router.put(
     "/mark-answered",
-    # response_model=QuestionIdResponse,
+    response_model=MarkAnsweredResponse,
     responses={
         status.HTTP_404_NOT_FOUND: {"description": "Not found"},
         status.HTTP_400_BAD_REQUEST: {"description": "Bad request"},
@@ -152,4 +153,4 @@ async def mark_answered(
     """Question mark_answered"""
     db_game = GameDb(session)
     await db_game.mark_question_answered(data.question_id, data.tg_id)
-    return {"success": "1"}
+    return {"success": True}

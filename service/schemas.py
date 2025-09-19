@@ -232,3 +232,14 @@ class QuestionAddResponse(BaseModel):
                 "created": 1,
             }
         }
+
+
+class MarkAnsweredResponse(BaseModel):
+    success: bool = Field(description="is answered")
+
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "success": True,
+            }
+        }
