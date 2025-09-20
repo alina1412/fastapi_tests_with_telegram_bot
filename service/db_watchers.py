@@ -29,21 +29,18 @@ class QueryTypeDb:
     def result_last_id(self, result):
         if self.DBTYPE == "postgresql":
             return result.returned_defaults[0]
-        else:
-            return result.lastrowid if result.lastrowid else None
+        return result.lastrowid if result.lastrowid else None
 
     def plus_do_nothing(self, query):
         if self.DBTYPE == "postgresql":
             return query.on_conflict_do_nothing()
-        else:
-            return query.prefix_with("IGNORE")
+        return query.prefix_with("IGNORE")
 
     @staticmethod
     def insert(*args, **kwargs):
         if QueryTypeDb.DBTYPE == "postgresql":
             return ps_insert(*args).values(**kwargs)
-        else:
-            return mysql_insert(*args).values(**kwargs)
+        return mysql_insert(*args).values(**kwargs)
 
 
 class QuestionDb(QueryTypeDb):

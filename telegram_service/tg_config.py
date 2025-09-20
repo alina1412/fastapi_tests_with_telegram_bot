@@ -1,4 +1,5 @@
 import logging
+import os
 
 logging.basicConfig(
     filename="logs.log",
@@ -10,4 +11,4 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
-URL_START = "http://localhost:8000"
+URL_START = os.environ.get("URL_START")

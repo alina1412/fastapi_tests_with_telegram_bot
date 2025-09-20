@@ -22,10 +22,6 @@ from sqlalchemy.orm import (
 from service.config import utcnow
 
 
-class Base(DeclarativeBase):
-    pass
-
-
 class Base(MappedAsDataclass, DeclarativeBase):
     """Subclasses will be converted to dataclasses"""
 
