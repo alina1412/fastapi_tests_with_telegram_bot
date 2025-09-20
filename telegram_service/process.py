@@ -9,7 +9,7 @@ from service.schemas import (
     IsCorrectAnsResponse,
     QuestionAddResponse,
     QuestionResponse,
-    QuestionResponseInQuiz,
+    QuestionInQuizResponse,
     QuizResponse,
     ScoreResponse,
 )
@@ -24,7 +24,10 @@ class CallHandlersBase:
                 url, data=data, headers={"Content-Type": "application/json"}
             ) as resp:
                 if resp.status not in (200, 201):
-                    logger.error(await resp.json())
+                    try:
+                        logger.error(await resp.json())
+                    except Exception:
+                        ...
                     return None
                 json_resp = await resp.json()
                 logger.info(json_resp)
@@ -122,7 +125,7 @@ class CallHandlersQuizGame(CallHandlersBase):
 
     async def next_question_with_ans_opts(
         self, tg_id: int
-    ) -> QuestionResponseInQuiz | None:
+    ) -> QuestionInQuizResponse | None:
         url = URL_START + "/v1/round-question-id"
         data = json.dumps({"tg_id": tg_id})
         res = await self.load_json_post_handler(url, data)
@@ -139,7 +142,7 @@ class CallHandlersQuizGame(CallHandlersBase):
         return question
 
     async def transform_to_text_and_btns(
-        self, next_question: QuestionResponseInQuiz
+        self, next_question: QuestionInQuizResponse
     ) -> QuizOutDto:
         text = (
             next_question.text

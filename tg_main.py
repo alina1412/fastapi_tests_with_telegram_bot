@@ -1,7 +1,5 @@
 import asyncio
 
-# import aiohttp
-
 from telegram_service import TgPullQueue, TgWorkQueue
 
 

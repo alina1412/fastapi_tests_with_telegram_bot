@@ -11,7 +11,7 @@ from service.schemas import (
     IsCorrectAnsResponse,
     QuestionAddRequest,
     QuestionListRequest,
-    QuestionResponseInQuiz,
+    QuestionInQuizResponse,
 )
 
 
@@ -74,7 +74,7 @@ class QuestionsManager:
         responses = {}
         for question in res:
             if question.id not in responses:
-                responses[question.id] = QuestionResponseInQuiz(
+                responses[question.id] = QuestionInQuizResponse(
                     text=question.text,
                     id=question.id,
                     active=question.active,
